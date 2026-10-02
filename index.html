@@ -33,17 +33,26 @@ header.top h1{font-size:clamp(1.6rem,4vw,2.3rem);font-weight:700}
 .lista-cab{display:flex;gap:8px;margin-bottom:10px}
 .lista-cab input{flex:1;min-width:0}
 #lista{list-style:none;margin:0;padding:0;max-height:62vh;overflow:auto}
-#lista li button{all:unset;box-sizing:border-box;display:block;width:100%;padding:10px 12px;border-radius:8px;cursor:pointer}
+#lista li button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;padding:8px 12px;border-radius:8px;cursor:pointer}
 #lista li button:hover{background:var(--campo-ro)}
 #lista li button:focus-visible{outline:2px solid var(--primario);outline-offset:1px}
 #lista li button[aria-current="true"]{background:var(--primario);color:#fff}
 #lista .n{font-weight:600;display:block}
 #lista .s{font-size:.82rem;opacity:.75}
+.mini{flex:none;width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--campo-ro);color:var(--primario);display:grid;place-items:center;font:700 1rem "Bricolage Grotesque",sans-serif}
+.mini img{width:100%;height:100%;object-fit:cover;display:block}
+#lista li button[aria-current="true"] .mini{background:rgba(255,255,255,.25);color:#fff}
 .vacio{color:var(--tinta-suave);padding:12px;font-size:.92rem}
 /* Formulario */
 form{padding:20px}
 .form-cab{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
 .form-cab h2{font-size:1.35rem}
+.ficha-id{display:flex;align-items:center;gap:14px;min-width:0}
+.ficha-id h2{overflow-wrap:anywhere}
+.avatar{flex:none;width:96px;height:96px;border-radius:50%;overflow:hidden;background:var(--campo-ro);border:2px solid var(--linea);color:var(--primario);display:grid;place-items:center;font:700 2.2rem "Bricolage Grotesque",sans-serif}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.foto-acc{display:flex;gap:8px;flex-wrap:wrap;width:100%;margin-top:10px}
+.foto-acc .btn{min-height:40px;padding:0 14px;font-size:.88rem}
 .etiqueta-modo{font-size:.8rem;padding:3px 10px;border-radius:99px;border:1px solid var(--linea);color:var(--tinta-suave)}
 .etiqueta-modo.edit{background:var(--aviso);border-color:var(--aviso);color:#2b1d00}
 fieldset{border:0;border-top:1px solid var(--linea);margin:18px 0 0;padding:14px 0 0;min-width:0}
@@ -78,6 +87,7 @@ button.btn[disabled]{opacity:.5;cursor:not-allowed}
   #lista{max-height:220px}
 }
 @media (max-width:520px){
+  .avatar{width:76px;height:76px;font-size:1.8rem}
   .grid{grid-template-columns:1fr}
   form{padding:16px}
   .acciones .btn{flex:1 1 calc(50% - 10px)}
@@ -114,8 +124,18 @@ button.btn[disabled]{opacity:.5;cursor:not-allowed}
 
       <form id="form" class="solo-lectura" hidden autocomplete="off" novalidate>
         <div class="form-cab">
-          <h2 id="titulo-form">Mascota</h2>
-          <span class="etiqueta-modo" id="etiqueta-modo">Solo lectura</span>
+          <div class="ficha-id">
+            <div class="avatar" id="avatar"><img id="avatar-img" alt="Foto de perfil de la mascota" hidden><span id="avatar-ini" aria-hidden="true">?</span></div>
+            <div>
+              <h2 id="titulo-form">Mascota</h2>
+              <span class="etiqueta-modo" id="etiqueta-modo">Solo lectura</span>
+            </div>
+          </div>
+          <div class="foto-acc" id="foto-acc" hidden>
+            <input type="file" id="foto-input" accept="image/jpeg,image/png,image/webp" hidden>
+            <button type="button" class="btn" id="btn-foto">Subir foto</button>
+            <button type="button" class="btn" id="btn-quitar-foto" hidden>Quitar foto</button>
+          </div>
         </div>
 
         <fieldset id="campos">
@@ -177,6 +197,8 @@ const CAMPOS_TEXTO = ["nombre","especie","raza","sexo","fecha_nacimiento","peso_
 const CAMPOS_BOOL  = ["esterilizado","vacunas_al_dia"];
 
 const $ = id => document.getElementById(id);
+const BUCKET = "fotos-mascotas";
+const rutaDesdeUrl = u => (u && u.includes("/" + BUCKET + "/")) ? decodeURIComponent(u.split("/" + BUCKET + "/")[1].split("?")[0]) : null;
 const configurado = !SUPABASE_URL.startsWith("PEGA_") && !SUPABASE_ANON_KEY.startsWith("PEGA_");
 
 /* ---------- Capa de datos ---------- */
@@ -189,6 +211,16 @@ if (configurado) {
     crear:      async fila   => ok(await sb.from("mascotas").insert(fila).select().single()),
     actualizar: async (id,f) => ok(await sb.from("mascotas").update(f).eq("id", id).select().single()),
     eliminar:   async id     => ok(await sb.from("mascotas").delete().eq("id", id)),
+    subirFoto:  async blob   => {
+      const ruta = crypto.randomUUID() + ".jpg";
+      const { error } = await sb.storage.from(BUCKET).upload(ruta, blob, { contentType: "image/jpeg", cacheControl: "3600" });
+      if (error) throw error;
+      return sb.storage.from(BUCKET).getPublicUrl(ruta).data.publicUrl;
+    },
+    borrarFoto: async url    => {
+      const ruta = rutaDesdeUrl(url); if (!ruta) return;
+      await sb.storage.from(BUCKET).remove([ruta]);
+    },
   };
   $("modo-datos").textContent = "Conectado a PostgreSQL (Supabase)";
 } else {
@@ -199,6 +231,8 @@ if (configurado) {
     crear:      async fila   => { const r = {...fila,id:String(Date.now())}; mem.push(r); return r; },
     actualizar: async (id,f) => { mem = mem.map(m => m.id===id ? {...m,...f} : m); return mem.find(m=>m.id===id); },
     eliminar:   async id     => { mem = mem.filter(m => m.id!==id); },
+    subirFoto:  blob => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); }),
+    borrarFoto: async () => {},
   };
   $("modo-datos").textContent = "Modo demo (sin base de datos)";
   $("aviso").hidden = false;
@@ -210,6 +244,41 @@ let seleccionId = null;
 let modo = "vista"; // vista | editar | nueva
 
 const form = $("form");
+
+/* ---------- Foto de perfil ---------- */
+let fotoUrl = null;        // URL guardada en la base de datos
+let fotoArchivo = null;    // imagen nueva elegida (aún sin subir)
+let fotoPreview = null;    // URL temporal para mostrar la imagen nueva
+let fotoQuitada = false;   // el usuario pidió quitar la foto
+
+function pintarAvatar(){
+  const url = fotoArchivo ? fotoPreview : (fotoQuitada ? null : fotoUrl);
+  const img = $("avatar-img"), ini = $("avatar-ini");
+  img.hidden = !url; ini.hidden = !!url;
+  if (url) img.src = url; else img.removeAttribute("src");
+  ini.textContent = (form.elements.nombre.value.trim()[0] || "?").toUpperCase();
+}
+function actualizarBotonesFoto(){
+  const edit = modo !== "vista";
+  const hayFoto = !!fotoArchivo || (!!fotoUrl && !fotoQuitada);
+  $("foto-acc").hidden = !edit;
+  $("btn-foto").textContent = hayFoto ? "Cambiar foto" : "Subir foto";
+  $("btn-quitar-foto").hidden = !(edit && hayFoto);
+}
+function reiniciarFoto(url){
+  if (fotoPreview) URL.revokeObjectURL(fotoPreview);
+  fotoUrl = url || null; fotoArchivo = null; fotoPreview = null; fotoQuitada = false;
+  pintarAvatar();
+}
+// Reduce la imagen a máx. 800 px y la convierte a JPEG (pesa ~100-200 KB)
+async function reducirImagen(file, max = 800){
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error("No se pudo procesar la imagen")), "image/jpeg", 0.85));
+}
 
 function toast(msg, error=false){
   const t = $("toast");
@@ -231,10 +300,15 @@ function pintarLista(){
     const li = document.createElement("li");
     const b = document.createElement("button"); b.type = "button";
     if (m.id === seleccionId) b.setAttribute("aria-current","true");
+    const mini = document.createElement("span"); mini.className = "mini";
+    if (m.foto_url){ const im = document.createElement("img"); im.src = m.foto_url; im.alt = ""; im.loading = "lazy"; mini.appendChild(im); }
+    else mini.textContent = (m.nombre[0] || "?").toUpperCase();
+    const txt = document.createElement("span");
     const n = document.createElement("span"); n.className = "n"; n.textContent = m.nombre;
     const s = document.createElement("span"); s.className = "s";
     s.textContent = [m.especie, m.raza, m.duenio_nombre].filter(Boolean).join(" · ");
-    b.append(n, s);
+    txt.append(n, s);
+    b.append(mini, txt);
     b.addEventListener("click", () => seleccionar(m.id));
     li.appendChild(b); ul.appendChild(li);
   });
@@ -244,6 +318,7 @@ function pintarLista(){
 function llenarForm(m){
   CAMPOS_TEXTO.forEach(c => form.elements[c].value = m?.[c] ?? (c==="especie" ? "Perro" : ""));
   CAMPOS_BOOL.forEach(c => form.elements[c].checked = !!m?.[c]);
+  reiniciarFoto(m?.foto_url);
 }
 function leerForm(){
   const fila = {};
@@ -272,6 +347,7 @@ function aplicarModo(nuevo){
   et.textContent = modo === "vista" ? "Solo lectura" : modo === "editar" ? "Editando" : "Nueva mascota";
   et.classList.toggle("edit", edit);
   $("titulo-form").textContent = modo === "nueva" ? "Nueva mascota" : (form.elements.nombre.value || "Mascota");
+  actualizarBotonesFoto(); pintarAvatar();
 }
 function mostrarForm(visible){
   form.hidden = !visible; $("sin-seleccion").hidden = visible;
@@ -287,6 +363,26 @@ function seleccionar(id){
 
 /* ---------- Eventos ---------- */
 $("buscar").addEventListener("input", pintarLista);
+form.elements.nombre.addEventListener("input", pintarAvatar);
+
+$("btn-foto").addEventListener("click", () => $("foto-input").click());
+$("foto-input").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { toast("Elige una imagen JPG, PNG o WebP.", true); return; }
+  if (f.size > 15 * 1024 * 1024) { toast("La imagen es muy pesada (máx. 15 MB).", true); return; }
+  try {
+    const blob = await reducirImagen(f);
+    if (fotoPreview) URL.revokeObjectURL(fotoPreview);
+    fotoArchivo = blob; fotoPreview = URL.createObjectURL(blob); fotoQuitada = false;
+    pintarAvatar(); actualizarBotonesFoto();
+  } catch (err) { console.error(err); toast("No se pudo leer la imagen.", true); }
+});
+$("btn-quitar-foto").addEventListener("click", () => {
+  if (fotoPreview) URL.revokeObjectURL(fotoPreview);
+  fotoArchivo = null; fotoPreview = null; fotoQuitada = true;
+  pintarAvatar(); actualizarBotonesFoto();
+});
 
 $("btn-nueva").addEventListener("click", () => {
   if (modo !== "vista" && !confirm("Tienes cambios sin guardar. ¿Descartarlos?")) return;
@@ -311,7 +407,18 @@ form.addEventListener("submit", async e => {
   const btn = $("btn-guardar"); btn.disabled = true;
   try {
     const fila = leerForm();
-    const guardada = modo === "nueva" ? await api.crear(fila) : await api.actualizar(seleccionId, fila);
+    const fotoAnterior = fotoUrl;
+    let fotoSubida = null;
+    if (fotoArchivo) { fotoSubida = await api.subirFoto(fotoArchivo); fila.foto_url = fotoSubida; }
+    else if (fotoQuitada) { fila.foto_url = null; }
+    let guardada;
+    try {
+      guardada = modo === "nueva" ? await api.crear(fila) : await api.actualizar(seleccionId, fila);
+    } catch (e2) {
+      if (fotoSubida) api.borrarFoto(fotoSubida).catch(() => {}); // evita fotos huérfanas
+      throw e2;
+    }
+    if (fotoAnterior && (fotoSubida || fotoQuitada)) api.borrarFoto(fotoAnterior).catch(() => {});
     mascotas = await api.listar();
     seleccionId = guardada.id;
     llenarForm(guardada); aplicarModo("vista"); pintarLista();
@@ -327,6 +434,7 @@ $("btn-eliminar").addEventListener("click", async () => {
   if (!m || !confirm(`¿Eliminar la ficha de ${m.nombre}? Esta acción no se puede deshacer.`)) return;
   try {
     await api.eliminar(seleccionId);
+    if (m.foto_url) api.borrarFoto(m.foto_url).catch(() => {});
     mascotas = await api.listar();
     seleccionId = null; mostrarForm(false); aplicarModo("vista"); pintarLista();
     toast("Mascota eliminada.");
