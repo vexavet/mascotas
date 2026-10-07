@@ -232,7 +232,7 @@ $("fc-p").addEventListener("submit", async e => {
 function pintarCabecera(){
   $("sesion").innerHTML = perfil
     ? `<span class="chip">${esc(perfil.nombre)} · ${esc(perfil.rol)}</span><button class="btn" id="b-cuenta">Mi cuenta</button><button class="btn" id="b-salir">Salir</button>`
-    : `<button class="btn pri" id="b-login">Iniciar sesión</button>`;
+    : publicId ? `<button class="btn pri" id="b-login">Iniciar sesión</button>` : ""; // en la portada el botón ya está en el centro
   if ($("b-login")) $("b-login").onclick = () => $("dlg").showModal();
   if ($("b-cuenta")) $("b-cuenta").onclick = () => { $("c-user").value = perfil.usuario || ""; $("c-nombre").value = perfil.nombre; $("dlg-cuenta").showModal(); };
   if ($("b-salir")) $("b-salir").onclick = async () => {
