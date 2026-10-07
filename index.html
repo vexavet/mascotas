@@ -3,22 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#ffae00">
 <title>VEXAVET | Carnet Digital</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--fondo:#e9f0ee;--panel:#fff;--tinta:#13302b;--suave:#5b726c;--linea:#cfdcd8;--pri:#0f6b62;--pri2:#0a4f48;--aviso:#e7a21c;--peligro:#b3261e;--ro:#f3f7f6;--r:10px}
-@media (prefers-color-scheme:dark){:root{--fondo:#0e1a18;--panel:#152522;--tinta:#e6f1ee;--suave:#93aba5;--linea:#2a403b;--pri:#3fb5a8;--pri2:#6fd0c5;--ro:#1a2d29;--peligro:#ff8a80}}
+:root{color-scheme:light;--fondo:#ffae00;--panel:#fff;--tinta:#1c1236;--suave:#5f5675;--linea:#eadfc0;--pri:#4318e5;--pri2:#3310b8;--acento:#ff1a5e;--aviso:#ffae00;--peligro:#d90f4f;--ro:#fcf7e8;--r:10px}
 *{box-sizing:border-box}
 body{margin:0;background:var(--fondo);color:var(--tinta);font:400 16px/1.5 Figtree,system-ui,sans-serif}
 h1,h2,h3{font-family:"Bricolage Grotesque",Figtree,sans-serif;margin:0;letter-spacing:-.01em}
 .app{max-width:1120px;margin:0 auto;padding:16px 16px 40px}
 header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-.marca{font:700 1.5rem "Bricolage Grotesque",sans-serif;color:var(--tinta);text-decoration:none}
-.marca small{font:400 .85rem Figtree;color:var(--suave);margin-left:8px}
+.marca{font:700 1.5rem "Bricolage Grotesque",sans-serif;color:var(--pri);text-decoration:none}
+.marca small{font:500 .85rem Figtree;color:var(--tinta);margin-left:8px}
 #nav,#sesion,.fila{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.chip{font-size:.85rem;color:var(--suave)}
+.chip{font-size:.85rem;color:var(--tinta)}
 .panel{background:var(--panel);border:1px solid var(--linea);border-radius:var(--r)}
 .pad{padding:24px}
 .layout{display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start}
@@ -36,7 +36,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .cab{display:flex;gap:16px;align-items:center;margin-bottom:14px}.cab-t{display:grid;gap:8px;min-width:0}
 .tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--linea);margin-bottom:16px}
 button.tab{font:500 .92rem Figtree;background:none;border:0;border-bottom:3px solid transparent;padding:10px 12px;color:var(--suave);cursor:pointer;white-space:nowrap}
-button.tab[aria-current=true]{color:var(--pri);border-bottom-color:var(--pri);font-weight:600}
+button.tab[aria-current=true]{color:var(--pri);border-bottom-color:var(--acento);font-weight:600}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}.full{grid-column:1/-1}
 label{display:block;font-size:.86rem;font-weight:500;margin-bottom:4px}
 input,select,textarea{width:100%;font:inherit;color:inherit;background:var(--panel);border:1px solid var(--linea);border-radius:8px;padding:9px 11px;min-height:42px}
