@@ -58,6 +58,9 @@ details form{margin-top:12px}
 .pub{max-width:640px;margin:0 auto;padding:24px}.pub .avatar{width:120px;height:120px;font-size:3rem}
 dl{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;margin:16px 0}dt{color:var(--suave)}dd{margin:0}
 .ok{color:var(--pri);font-weight:600}
+.clave{position:relative}.clave input{padding-right:88px}
+.ojo{position:absolute;right:4px;top:50%;transform:translateY(-50%);min-height:32px;padding:0 10px;border:0;border-radius:6px;background:none;color:var(--pri);font:600 .85rem Figtree,sans-serif;cursor:pointer}
+.ojo:hover{background:var(--ro)}
 dialog{border:1px solid var(--linea);border-radius:var(--r);background:var(--panel);color:var(--tinta);padding:24px;width:min(380px,92vw)}
 dialog::backdrop{background:rgba(0,0,0,.45)}dialog form{display:grid;gap:12px}
 .err{color:var(--peligro);font-size:.9rem;min-height:1.2em}
@@ -170,6 +173,26 @@ $("fl").addEventListener("submit", async e => {
   $("dlg").close(); $("fl").reset(); await log("Inició sesión"); vista = "mascotas"; render();
 });
 $("l-x").onclick = () => $("dlg").close();
+
+/* ---------- Mostrar / ocultar contraseña ---------- */
+function ojos(root = document){
+  root.querySelectorAll("input[type=password]:not([data-ojo])").forEach(i => {
+    i.dataset.ojo = "1";
+    const w = document.createElement("div"); w.className = "clave";
+    i.parentNode.insertBefore(w, i); w.appendChild(i);
+    const b = document.createElement("button"); b.type = "button"; b.className = "ojo"; b.textContent = "Mostrar";
+    b.setAttribute("aria-label", "Mostrar contraseña"); b.setAttribute("aria-pressed", "false");
+    b.onclick = () => {
+      const ver = i.type === "password"; i.type = ver ? "text" : "password";
+      b.textContent = ver ? "Ocultar" : "Mostrar"; b.setAttribute("aria-pressed", String(ver)); b.setAttribute("aria-label", ver ? "Ocultar contraseña" : "Mostrar contraseña");
+    };
+    w.appendChild(b);
+  });
+}
+function ocultarClaves(root){ root.querySelectorAll("input[data-ojo]").forEach(i => { i.type = "password"; i.nextElementSibling.textContent = "Mostrar"; i.nextElementSibling.setAttribute("aria-pressed", "false"); }); }
+ojos();
+new MutationObserver(() => ojos($("app"))).observe($("app"), {childList: true, subtree: true});
+["dlg", "dlg-cuenta"].forEach(id => $(id).addEventListener("close", () => ocultarClaves($(id))));
 
 /* ---------- Mi cuenta ---------- */
 $("c-x").onclick = () => $("dlg-cuenta").close();
