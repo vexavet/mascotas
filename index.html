@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Figtree:wght@400;500;600&family=Montserrat:wght@800&family=Zilla+Slab:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{color-scheme:light;--fondo:#ffae00;--panel:#fff;--tinta:#1c1236;--suave:#5f5675;--linea:#eadfc0;--pri:#4318e5;--pri2:#3310b8;--acento:#ff1a5e;--aviso:#ffae00;--peligro:#d90f4f;--ro:#fcf7e8;--r:10px}
+:root{color-scheme:light;--fondo:#ffae00;--panel:#fff;--tinta:#1c1236;--suave:#5f5675;--linea:#eadfc0;--pri:#4318e5;--pri2:#3310b8;--acento:#ff1a5e;--aviso:#ffae00;--peligro:#d90f4f;--ro:#fcf7e8;--bloq:#ece8fb;--bloq-borde:#d8d0f4;--r:10px}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;background:var(--fondo);color:var(--tinta);font:400 16px/1.5 Figtree,system-ui,sans-serif}
@@ -43,7 +43,9 @@ label{display:block;font-size:.86rem;font-weight:500;margin-bottom:4px}
 input,select,textarea{width:100%;font:inherit;color:inherit;background:var(--panel);border:1px solid var(--linea);border-radius:8px;padding:9px 11px;min-height:42px}
 textarea{min-height:84px;resize:vertical}
 fieldset{border:0;margin:0;padding:0;min-width:0}
-fieldset:disabled input,fieldset:disabled select,fieldset:disabled textarea{background:var(--ro);border-color:transparent;appearance:none}
+input:disabled,select:disabled,textarea:disabled{background:var(--bloq);border-color:var(--bloq-borde);color:var(--suave);-webkit-text-fill-color:var(--suave);opacity:1;cursor:not-allowed;appearance:none}
+.clave input:disabled+.ojo{opacity:.4;pointer-events:none}
+.btn.chico{min-height:36px;padding:0 14px;font-size:.88rem}
 .check{display:flex;align-items:center;gap:10px}.check input{width:20px;height:20px;min-height:0;accent-color:var(--pri)}.check label{margin:0}
 :focus-visible{outline:2px solid var(--pri);outline-offset:1px}
 .btn{font:600 .92rem Figtree,sans-serif;min-height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--linea);background:var(--panel);color:var(--tinta);cursor:pointer;display:inline-flex;align-items:center;text-decoration:none}
@@ -81,6 +83,7 @@ header.top{position:relative}
 .hamb{display:none;width:46px;height:46px;place-items:center;border:1px solid var(--linea);border-radius:8px;background:var(--panel);color:var(--pri);cursor:pointer;padding:0}
 .hamb svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 .hamb[aria-expanded=true] .h,.hamb[aria-expanded=false] .x{display:none}
+@media (min-width:721px){#menu.solo-movil{display:none}}
 @media (max-width:720px){
   header.top{flex-wrap:nowrap}
   .hamb{display:grid}
@@ -111,7 +114,7 @@ header.top{position:relative}
 <div class="app">
   <header class="top">
     <a class="marca" href="./">VEXAVET<small>Carnet digital</small></a>
-    <button type="button" class="hamb" id="b-menu" aria-label="Menú" aria-controls="menu" aria-expanded="false" hidden>
+    <button type="button" class="hamb" id="b-menu" aria-label="Menú" aria-controls="menu" aria-expanded="false">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path class="h" d="M4 7h16M4 12h16M4 17h16"/><path class="x" d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
     <div id="menu">
@@ -145,17 +148,17 @@ header.top{position:relative}
 <dialog id="dlg-cuenta">
   <h2>Mi cuenta</h2>
   <form id="fc-n" style="margin-top:12px">
-    <div><label for="c-user">Usuario (no se puede cambiar)</label><input id="c-user" disabled></div>
-    <div><label for="c-nombre">Nombre</label><input id="c-nombre" required></div>
-    <button class="btn pri">Guardar nombre</button>
+    <div><label for="c-user">Usuario</label><input id="c-user" disabled></div>
+    <div><label for="c-nombre">Nombre de usuario</label><input id="c-nombre" required disabled></div>
+    <div class="fila"><button class="btn pri chico" id="c-gn" hidden>Guardar</button></div>
   </form>
   <form id="fc-p" style="margin-top:18px;border-top:1px solid var(--linea);padding-top:16px">
     <h3>Cambiar contraseña</h3>
-    <div><label for="c-act">Contraseña actual</label><input id="c-act" type="password" autocomplete="current-password" required></div>
-    <div><label for="c-new">Nueva contraseña (mín. 6)</label><input id="c-new" type="password" minlength="6" autocomplete="new-password" required></div>
-    <button class="btn pri">Cambiar contraseña</button>
+    <div><label for="c-act">Contraseña actual</label><input id="c-act" type="password" autocomplete="current-password" disabled></div>
+    <div><label for="c-new">Nueva contraseña (mín. 6)</label><input id="c-new" type="password" autocomplete="new-password" disabled></div>
+    <div class="fila"><button class="btn pri chico" id="c-gp" hidden>Guardar contraseña</button></div>
   </form>
-  <div class="fila" style="margin-top:16px"><button type="button" class="btn" id="c-x">Cerrar</button></div>
+  <div class="fila" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--linea)"><button type="button" class="btn pri" id="c-ed">Editar perfil</button><button type="button" class="btn" id="c-x">Cerrar</button></div>
 </dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
@@ -257,29 +260,56 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") cerrarMenu()
 
 /* ---------- Mi cuenta ---------- */
 $("c-x").onclick = () => $("dlg-cuenta").close();
+let editCuenta = false;
+function modoCuenta(ed){
+  editCuenta = ed;
+  ["c-nombre", "c-act", "c-new"].forEach(id => $(id).disabled = !ed);
+  $("c-ed").textContent = ed ? "Cancelar edición" : "Editar perfil";
+  $("c-ed").classList.toggle("pri", !ed);
+  revisarCambios();
+}
+function revisarCambios(){
+  const n = $("c-nombre").value.trim();
+  $("c-gn").hidden = !(editCuenta && n && n !== perfil.nombre);
+  $("c-gp").hidden = !(editCuenta && ($("c-act").value || $("c-new").value));
+}
+function abrirCuenta(){
+  $("c-user").value = perfil.usuario || ""; $("c-nombre").value = perfil.nombre; $("c-act").value = $("c-new").value = "";
+  ocultarClaves($("dlg-cuenta")); modoCuenta(false); $("dlg-cuenta").showModal();
+}
+["c-nombre", "c-act", "c-new"].forEach(id => $(id).addEventListener("input", revisarCambios));
+$("c-ed").onclick = () => {
+  const entrar = !editCuenta;
+  if (!entrar){ $("c-nombre").value = perfil.nombre; $("c-act").value = $("c-new").value = ""; ocultarClaves($("dlg-cuenta")); }
+  modoCuenta(entrar); if (entrar) $("c-nombre").focus();
+};
 $("fc-n").addEventListener("submit", async e => {
-  e.preventDefault(); const n = $("c-nombre").value.trim(); if (!n) return;
+  e.preventDefault(); const n = $("c-nombre").value.trim(); if (!n || n === perfil.nombre) return;
+  if (!confirm(`¿Guardar el cambio de nombre de usuario a "${n}"?`)) return;
   const { error } = await sb.rpc("actualizar_mi_nombre", {p_nombre: n});
   if (error) return toast("No se pudo guardar: " + error.message, true);
-  perfil.nombre = n; pintarCabecera(); log("Cambió su nombre", "perfiles", n); toast("Nombre actualizado.");
+  perfil.nombre = n; pintarCabecera(); revisarCambios(); log("Cambió su nombre", "perfiles", n); toast("Nombre actualizado.");
 });
 $("fc-p").addEventListener("submit", async e => {
   e.preventDefault();
+  if (!$("c-act").value) return toast("Escribe tu contraseña actual.", true);
+  if ($("c-new").value.length < 6) return toast("La nueva contraseña debe tener al menos 6 caracteres.", true);
+  if (!confirm("¿Guardar la nueva contraseña?")) return;
   const { data: { user } } = await sb.auth.getUser();
   const chk = await sb.auth.signInWithPassword({email: user.email, password: $("c-act").value});
   if (chk.error) return toast("La contraseña actual no es correcta.", true);
   const { error } = await sb.auth.updateUser({password: $("c-new").value});
   if (error) return toast("No se pudo cambiar: " + error.message, true);
-  $("fc-p").reset(); log("Cambió su contraseña", "perfiles"); toast("Contraseña actualizada.");
+  $("c-act").value = $("c-new").value = ""; ocultarClaves($("dlg-cuenta")); revisarCambios(); log("Cambió su contraseña", "perfiles"); toast("Contraseña actualizada.");
 });
 
 /* ---------- Estructura ---------- */
 function pintarCabecera(){
   $("sesion").innerHTML = perfil
     ? `<span class="chip">${esc(perfil.nombre)} · ${esc(perfil.rol)}</span><button class="btn" id="b-cuenta">Mi cuenta</button><button class="btn" id="b-salir">Salir</button>`
-    : publicId ? `<button class="btn pri" id="b-login">Iniciar sesión</button>` : ""; // en la portada el botón ya está en el centro
+    : `<button class="btn pri" id="b-login">Iniciar sesión</button>`;
   if ($("b-login")) $("b-login").onclick = () => $("dlg").showModal();
-  if ($("b-cuenta")) $("b-cuenta").onclick = () => { $("c-user").value = perfil.usuario || ""; $("c-nombre").value = perfil.nombre; $("dlg-cuenta").showModal(); };
+  if ($("b-cuenta")) $("b-cuenta").onclick = abrirCuenta;
   if ($("b-salir")) $("b-salir").onclick = async () => {
     try { await log("Cerró sesión"); await sb.auth.signOut(); } catch {}
     try { await sb.auth.signOut({scope: "local"}); } catch {}
@@ -291,7 +321,7 @@ function pintarCabecera(){
     : secs.map(([v,l]) => `<button class="btn ${v === vista ? "pri" : ""}" data-v="${v}">${l}</button>`).join("");
   if ($("b-avanzada")) $("b-avanzada").onclick = () => { forzarPublico = false; render(); };
   $("nav").querySelectorAll("[data-v]").forEach(b => b.onclick = () => { vista = b.dataset.v; render(); });
-  $("b-menu").hidden = !$("nav").innerHTML.trim() && !$("sesion").innerHTML.trim(); cerrarMenu();
+  $("menu").classList.toggle("solo-movil", !perfil && !publicId); cerrarMenu(); // en la portada, el menú solo existe en móvil
 }
 function render(){
   // Personal con sesión que abre un enlace público: pasa directo a la ficha avanzada
@@ -522,7 +552,7 @@ async function vistaUsuarios(){
   $("e-x").onclick = () => $("dlg-editar").close();
   document.querySelectorAll("[data-edit]").forEach(x => x.onclick = () => {
     const u = por(x.dataset.edit);
-    if (u.id === perfil.id){ $("c-user").value = perfil.usuario || ""; $("c-nombre").value = perfil.nombre; return $("dlg-cuenta").showModal(); }
+    if (u.id === perfil.id) return abrirCuenta();
     uEdit = u; $("e-u").value = u.usuario || ""; $("e-n").value = u.nombre; $("e-r").value = u.rol; $("e-p").value = "";
     $("dlg-editar").showModal();
   });
