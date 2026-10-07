@@ -76,6 +76,21 @@ dialog::backdrop{background:rgba(0,0,0,.45)}dialog form{display:grid;gap:12px}
 .err{color:var(--peligro);font-size:.9rem;min-height:1.2em}
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--tinta);color:var(--panel);padding:11px 18px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:10}
 #toast.ver{opacity:1}#toast.error{background:var(--peligro);color:#fff}
+header.top{position:relative}
+#menu{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;flex:1;margin-left:16px}
+.hamb{display:none;width:46px;height:46px;place-items:center;border:1px solid var(--linea);border-radius:8px;background:var(--panel);color:var(--pri);cursor:pointer;padding:0}
+.hamb svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.hamb[aria-expanded=true] .h,.hamb[aria-expanded=false] .x{display:none}
+@media (max-width:720px){
+  header.top{flex-wrap:nowrap}
+  .hamb{display:grid}
+  #menu{display:none;position:absolute;top:100%;left:0;right:0;z-index:20;margin:8px 0 0;padding:12px;flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:10px;background:var(--panel);border:1px solid var(--linea);border-radius:var(--r)}
+  #menu.abierto{display:flex}
+  #nav,#sesion{flex-direction:column;align-items:stretch;flex-wrap:nowrap}
+  #nav .btn,#sesion .btn{width:100%;justify-content:flex-start;min-height:48px}
+  #sesion .chip{padding:2px 4px}
+  #nav:not(:empty)+#sesion{border-top:1px solid var(--linea);padding-top:10px}
+}
 .portada{position:relative;display:grid;grid-template-columns:1.1fr .9fr;align-items:center;gap:8px;min-height:560px;padding:60px 8px 56px;overflow:hidden}
 .portada h1{font:800 clamp(2.8rem,8.4vw,6rem)/.92 Montserrat,"Bricolage Grotesque",sans-serif;letter-spacing:-.035em;margin:0}
 .portada h1 span{display:block}.t1{color:#fff}.t2{color:var(--acento)}.t3{color:var(--pri)}
@@ -96,8 +111,13 @@ dialog::backdrop{background:rgba(0,0,0,.45)}dialog form{display:grid;gap:12px}
 <div class="app">
   <header class="top">
     <a class="marca" href="./">VEXAVET<small>Carnet digital</small></a>
-    <nav id="nav" aria-label="Secciones"></nav>
-    <div id="sesion"></div>
+    <button type="button" class="hamb" id="b-menu" aria-label="Menú" aria-controls="menu" aria-expanded="false" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path class="h" d="M4 7h16M4 12h16M4 17h16"/><path class="x" d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <div id="menu">
+      <nav id="nav" aria-label="Secciones"></nav>
+      <div id="sesion"></div>
+    </div>
   </header>
   <main id="app"></main>
 </div>
@@ -228,6 +248,13 @@ ojos();
 new MutationObserver(() => ojos($("app"))).observe($("app"), {childList: true, subtree: true});
 ["dlg", "dlg-cuenta", "dlg-editar"].forEach(id => $(id).addEventListener("close", () => ocultarClaves($(id))));
 
+/* ---------- Menú hamburguesa (móvil) ---------- */
+function cerrarMenu(){ $("menu").classList.remove("abierto"); $("b-menu").setAttribute("aria-expanded", "false"); }
+$("b-menu").onclick = () => { const ab = $("menu").classList.toggle("abierto"); $("b-menu").setAttribute("aria-expanded", String(ab)); };
+$("menu").addEventListener("click", e => { if (e.target.closest("button,a")) cerrarMenu(); });
+document.addEventListener("click", e => { if (!e.target.closest("header.top")) cerrarMenu(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") cerrarMenu(); });
+
 /* ---------- Mi cuenta ---------- */
 $("c-x").onclick = () => $("dlg-cuenta").close();
 $("fc-n").addEventListener("submit", async e => {
@@ -264,6 +291,7 @@ function pintarCabecera(){
     : secs.map(([v,l]) => `<button class="btn ${v === vista ? "pri" : ""}" data-v="${v}">${l}</button>`).join("");
   if ($("b-avanzada")) $("b-avanzada").onclick = () => { forzarPublico = false; render(); };
   $("nav").querySelectorAll("[data-v]").forEach(b => b.onclick = () => { vista = b.dataset.v; render(); });
+  $("b-menu").hidden = !$("nav").innerHTML.trim() && !$("sesion").innerHTML.trim(); cerrarMenu();
 }
 function render(){
   // Personal con sesión que abre un enlace público: pasa directo a la ficha avanzada
