@@ -117,7 +117,8 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fecha = d => d ? new Date(d.length > 10 ? d : d + "T00:00:00").toLocaleDateString("es-EC") : "—";
 const hoy = () => new Date().toISOString().slice(0, 10);
-const publicId = new URLSearchParams(location.search).get("m");
+const params = new URLSearchParams(location.search);
+let publicId = params.get("m"), forzarPublico = params.get("vista") === "publica";
 const enlace = id => location.origin + location.pathname + "?m=" + id;
 const isAdmin = () => perfil?.rol === ROL_ADMIN;
 
@@ -202,11 +203,14 @@ function pintarCabecera(){
     perfil = null; selId = null; vista = "mascotas"; render();
   };
   const secs = [["mascotas","Mascotas"], ...(isAdmin() ? [["usuarios","Usuarios"],["actividad","Actividad"]] : [])];
-  $("nav").innerHTML = !perfil ? "" : publicId ? `<a class="btn" href="${location.pathname}">Ir al panel</a>`
+  $("nav").innerHTML = !perfil ? "" : publicId ? `<button class="btn pri" id="b-avanzada">Abrir ficha avanzada</button>`
     : secs.map(([v,l]) => `<button class="btn ${v === vista ? "pri" : ""}" data-v="${v}">${l}</button>`).join("");
+  if ($("b-avanzada")) $("b-avanzada").onclick = () => { forzarPublico = false; render(); };
   $("nav").querySelectorAll("[data-v]").forEach(b => b.onclick = () => { vista = b.dataset.v; render(); });
 }
 function render(){
+  // Personal con sesión que abre un enlace público: pasa directo a la ficha avanzada
+  if (publicId && perfil && !forzarPublico){ selId = publicId; publicId = null; history.replaceState(null, "", location.pathname); tab = "datos"; vista = "mascotas"; }
   pintarCabecera();
   if (publicId) return pintarPublico();
   if (!perfil) return $("app").innerHTML = `<div class="panel pad"><h2>Acceso del personal</h2><p>Inicia sesión como veterinario o administrador para ver el listado de pacientes. Los perfiles individuales se comparten con un enlace público.</p></div>`;
@@ -269,7 +273,7 @@ function pintarCab(){
   const m = mascotas.find(x => x.id === selId) || {}, ed = editando || nueva;
   const url = fotoArchivo ? fotoPrev : (fotoQuitada ? null : m.foto_url);
   $("cab").innerHTML = `<div class="avatar">${avatarHTML(url, m.nombre)}</div><div class="cab-t"><h2>${nueva ? "Nueva mascota" : esc(m.nombre)}</h2>
-    ${nueva ? "" : `<div class="fila"><button class="btn" id="b-copiar">Copiar enlace público</button><a class="btn" target="_blank" rel="noopener" href="${enlace(m.id)}">Ver perfil público</a></div>`}
+    ${nueva ? "" : `<div class="fila"><button class="btn" id="b-copiar">Copiar enlace público</button><a class="btn" target="_blank" rel="noopener" href="${enlace(m.id)}&vista=publica">Ver perfil público</a></div>`}
     ${ed ? `<div class="fila"><button type="button" class="btn" id="b-foto">${url ? "Cambiar" : "Subir"} foto</button>${url ? '<button type="button" class="btn" id="b-qfoto">Quitar foto</button>' : ""}</div>` : ""}</div>`;
   if ($("b-copiar")) $("b-copiar").onclick = async () => { try { await navigator.clipboard.writeText(enlace(m.id)); toast("Enlace copiado."); } catch { prompt("Copia este enlace:", enlace(m.id)); } };
   if ($("b-foto")) $("b-foto").onclick = () => $("foto-in").click();
