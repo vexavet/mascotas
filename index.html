@@ -63,8 +63,9 @@ details form{margin-top:12px}
 .pub{max-width:640px;margin:0 auto;padding:24px}.pub .avatar{width:120px;height:120px;font-size:3rem}
 dl{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;margin:16px 0}dt{color:var(--suave)}dd{margin:0}
 .ok{color:var(--pri);font-weight:600}
-.clave{position:relative}.clave input{padding-right:88px}
-.ojo{position:absolute;right:4px;top:50%;transform:translateY(-50%);min-height:32px;padding:0 10px;border:0;border-radius:6px;background:none;color:var(--pri);font:600 .85rem Figtree,sans-serif;cursor:pointer}
+.clave{position:relative}.clave input{padding-right:46px}
+.ojo{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:36px;height:36px;padding:0;display:grid;place-items:center;border:0;border-radius:6px;background:none;color:var(--pri);cursor:pointer}
+.ojo svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .ojo:hover{background:var(--ro)}
 dialog{border:1px solid var(--linea);border-radius:var(--r);background:var(--panel);color:var(--tinta);padding:24px;width:min(380px,92vw)}
 dialog::backdrop{background:rgba(0,0,0,.45)}dialog form{display:grid;gap:12px}
@@ -191,21 +192,23 @@ $("fl").addEventListener("submit", async e => {
 $("l-x").onclick = () => $("dlg").close();
 
 /* ---------- Mostrar / ocultar contraseña ---------- */
+const OJO_ABIERTO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const OJO_TACHADO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.9 5.2A9.9 9.9 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.700 9.700 0 0 0 5.400-1.600"/><path d="M9.900 9.900a3 3 0 0 0 4.200 4.200"/><path d="M3 3l18 18"/></svg>';
 function ojos(root = document){
   root.querySelectorAll("input[type=password]:not([data-ojo])").forEach(i => {
     i.dataset.ojo = "1";
     const w = document.createElement("div"); w.className = "clave";
     i.parentNode.insertBefore(w, i); w.appendChild(i);
-    const b = document.createElement("button"); b.type = "button"; b.className = "ojo"; b.textContent = "Mostrar";
+    const b = document.createElement("button"); b.type = "button"; b.className = "ojo"; b.innerHTML = OJO_ABIERTO;
     b.setAttribute("aria-label", "Mostrar contraseña"); b.setAttribute("aria-pressed", "false");
     b.onclick = () => {
       const ver = i.type === "password"; i.type = ver ? "text" : "password";
-      b.textContent = ver ? "Ocultar" : "Mostrar"; b.setAttribute("aria-pressed", String(ver)); b.setAttribute("aria-label", ver ? "Ocultar contraseña" : "Mostrar contraseña");
+      b.innerHTML = ver ? OJO_TACHADO : OJO_ABIERTO; b.setAttribute("aria-pressed", String(ver)); b.setAttribute("aria-label", ver ? "Ocultar contraseña" : "Mostrar contraseña");
     };
     w.appendChild(b);
   });
 }
-function ocultarClaves(root){ root.querySelectorAll("input[data-ojo]").forEach(i => { i.type = "password"; i.nextElementSibling.textContent = "Mostrar"; i.nextElementSibling.setAttribute("aria-pressed", "false"); }); }
+function ocultarClaves(root){ root.querySelectorAll("input[data-ojo]").forEach(i => { i.type = "password"; i.nextElementSibling.innerHTML = OJO_ABIERTO; i.nextElementSibling.setAttribute("aria-pressed", "false"); }); }
 ojos();
 new MutationObserver(() => ojos($("app"))).observe($("app"), {childList: true, subtree: true});
 ["dlg", "dlg-cuenta"].forEach(id => $(id).addEventListener("close", () => ocultarClaves($(id))));
