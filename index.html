@@ -8,447 +8,372 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{
-  --fondo:#e9f0ee; --panel:#ffffff; --tinta:#13302b; --tinta-suave:#5b726c;
-  --linea:#cfdcd8; --primario:#0f6b62; --primario-osc:#0a4f48;
-  --aviso:#e7a21c; --peligro:#b3261e; --campo-ro:#f3f7f6;
-  --radio:10px;
-}
-@media (prefers-color-scheme:dark){
-  :root{--fondo:#0e1a18;--panel:#152522;--tinta:#e6f1ee;--tinta-suave:#93aba5;--linea:#2a403b;--primario:#3fb5a8;--primario-osc:#6fd0c5;--campo-ro:#1a2d29;--peligro:#ff8a80}
-}
+:root{--fondo:#e9f0ee;--panel:#fff;--tinta:#13302b;--suave:#5b726c;--linea:#cfdcd8;--pri:#0f6b62;--pri2:#0a4f48;--aviso:#e7a21c;--peligro:#b3261e;--ro:#f3f7f6;--r:10px}
+@media (prefers-color-scheme:dark){:root{--fondo:#0e1a18;--panel:#152522;--tinta:#e6f1ee;--suave:#93aba5;--linea:#2a403b;--pri:#3fb5a8;--pri2:#6fd0c5;--ro:#1a2d29;--peligro:#ff8a80}}
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--fondo);color:var(--tinta);font:400 16px/1.5 Figtree,system-ui,sans-serif}
-h1,h2{font-family:"Bricolage Grotesque",Figtree,sans-serif;margin:0;letter-spacing:-.01em}
-.app{max-width:1120px;margin:0 auto;padding:20px 16px 40px}
-header.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-header.top h1{font-size:clamp(1.6rem,4vw,2.3rem);font-weight:700}
-.modo{font-size:.85rem;color:var(--tinta-suave)}
-.aviso{background:#fff4d6;color:#5c4300;border:1px solid var(--aviso);padding:10px 14px;border-radius:var(--radio);margin-bottom:16px;font-size:.92rem}
-.layout{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
-.panel{background:var(--panel);border:1px solid var(--linea);border-radius:var(--radio)}
-/* Lista */
-.lista{padding:14px}
-.lista-cab{display:flex;gap:8px;margin-bottom:10px}
-.lista-cab input{flex:1;min-width:0}
-#lista{list-style:none;margin:0;padding:0;max-height:62vh;overflow:auto}
-#lista li button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;padding:8px 12px;border-radius:8px;cursor:pointer}
-#lista li button:hover{background:var(--campo-ro)}
-#lista li button:focus-visible{outline:2px solid var(--primario);outline-offset:1px}
-#lista li button[aria-current="true"]{background:var(--primario);color:#fff}
-#lista .n{font-weight:600;display:block}
-#lista .s{font-size:.82rem;opacity:.75}
-.mini{flex:none;width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--campo-ro);color:var(--primario);display:grid;place-items:center;font:700 1rem "Bricolage Grotesque",sans-serif}
-.mini img{width:100%;height:100%;object-fit:cover;display:block}
-#lista li button[aria-current="true"] .mini{background:rgba(255,255,255,.25);color:#fff}
-.vacio{color:var(--tinta-suave);padding:12px;font-size:.92rem}
-/* Formulario */
-form{padding:20px}
-.form-cab{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
-.form-cab h2{font-size:1.35rem}
-.ficha-id{display:flex;align-items:center;gap:14px;min-width:0}
-.ficha-id h2{overflow-wrap:anywhere}
-.avatar{flex:none;width:96px;height:96px;border-radius:50%;overflow:hidden;background:var(--campo-ro);border:2px solid var(--linea);color:var(--primario);display:grid;place-items:center;font:700 2.2rem "Bricolage Grotesque",sans-serif}
-.avatar img{width:100%;height:100%;object-fit:cover;display:block}
-.foto-acc{display:flex;gap:8px;flex-wrap:wrap;width:100%;margin-top:10px}
-.foto-acc .btn{min-height:40px;padding:0 14px;font-size:.88rem}
-.etiqueta-modo{font-size:.8rem;padding:3px 10px;border-radius:99px;border:1px solid var(--linea);color:var(--tinta-suave)}
-.etiqueta-modo.edit{background:var(--aviso);border-color:var(--aviso);color:#2b1d00}
-fieldset{border:0;border-top:1px solid var(--linea);margin:18px 0 0;padding:14px 0 0;min-width:0}
-legend{font-family:"Bricolage Grotesque",sans-serif;font-weight:500;font-size:1.02rem;padding:0 10px 0 0;color:var(--primario)}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}
-.full{grid-column:1/-1}
-label{display:block;font-size:.88rem;font-weight:500;margin-bottom:4px}
+h1,h2,h3{font-family:"Bricolage Grotesque",Figtree,sans-serif;margin:0;letter-spacing:-.01em}
+.app{max-width:1120px;margin:0 auto;padding:16px 16px 40px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.marca{font:700 1.5rem "Bricolage Grotesque",sans-serif;color:var(--tinta);text-decoration:none}
+.marca small{font:400 .85rem Figtree;color:var(--suave);margin-left:8px}
+#nav,#sesion,.fila{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip{font-size:.85rem;color:var(--suave)}
+.panel{background:var(--panel);border:1px solid var(--linea);border-radius:var(--r)}
+.pad{padding:24px}
+.layout{display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start}
+.lista{padding:14px}.lista-cab{display:flex;gap:8px;margin-bottom:10px}.lista-cab input{flex:1;min-width:0}
+#lista{list-style:none;margin:0;padding:0;max-height:64vh;overflow:auto}
+#lista button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:8px;cursor:pointer}
+#lista button:hover{background:var(--ro)}
+#lista button[aria-current=true]{background:var(--pri);color:#fff}
+#lista .n{font-weight:600;display:block}#lista .s{font-size:.8rem;opacity:.75}
+.mini,.avatar{flex:none;border-radius:50%;overflow:hidden;background:var(--ro);color:var(--pri);display:grid;place-items:center;font:700 1rem "Bricolage Grotesque",sans-serif}
+.mini{width:40px;height:40px}.avatar{width:92px;height:92px;font-size:2.2rem;border:2px solid var(--linea)}
+.mini img,.avatar img{width:100%;height:100%;object-fit:cover}
+.vacio{color:var(--suave);padding:14px;font-size:.92rem}
+.det{padding:20px;min-width:0}
+.cab{display:flex;gap:16px;align-items:center;margin-bottom:14px}.cab-t{display:grid;gap:8px;min-width:0}
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--linea);margin-bottom:16px}
+button.tab{font:500 .92rem Figtree;background:none;border:0;border-bottom:3px solid transparent;padding:10px 12px;color:var(--suave);cursor:pointer;white-space:nowrap}
+button.tab[aria-current=true]{color:var(--pri);border-bottom-color:var(--pri);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}.full{grid-column:1/-1}
+label{display:block;font-size:.86rem;font-weight:500;margin-bottom:4px}
 input,select,textarea{width:100%;font:inherit;color:inherit;background:var(--panel);border:1px solid var(--linea);border-radius:8px;padding:9px 11px;min-height:42px}
-textarea{resize:vertical;min-height:84px}
-input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--primario);outline-offset:1px}
-.solo-lectura input:not([type=checkbox]),.solo-lectura select,.solo-lectura textarea{background:var(--campo-ro);border-color:transparent;appearance:none;-webkit-appearance:none}
-.check{display:flex;align-items:center;gap:10px;min-height:42px}
-.check input{width:20px;height:20px;min-height:0;accent-color:var(--primario)}
-.check label{margin:0}
-.solo-lectura .check input{pointer-events:none}
-/* Botones */
-.acciones{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;padding-top:16px;border-top:1px solid var(--linea)}
-.acciones .espacio{flex:1}
-button.btn{font:600 .95rem Figtree,sans-serif;min-height:44px;padding:0 18px;border-radius:8px;border:1px solid var(--linea);background:var(--panel);color:var(--tinta);cursor:pointer}
-button.btn:hover{border-color:var(--primario)}
-button.btn.pri{background:var(--primario);border-color:var(--primario);color:#fff}
-button.btn.pri:hover{background:var(--primario-osc)}
-button.btn.peligro{color:var(--peligro);border-color:var(--peligro);background:transparent}
-button.btn[disabled]{opacity:.5;cursor:not-allowed}
-[hidden]{display:none!important}
-.sin-seleccion{padding:40px 20px;text-align:center;color:var(--tinta-suave)}
-#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--tinta);color:var(--panel);padding:11px 18px;border-radius:8px;font-size:.92rem;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:10}
-#toast.ver{opacity:1}
-#toast.error{background:var(--peligro);color:#fff}
-@media (max-width:820px){
-  .layout{grid-template-columns:1fr}
-  #lista{max-height:220px}
-}
-@media (max-width:520px){
-  .avatar{width:76px;height:76px;font-size:1.8rem}
-  .grid{grid-template-columns:1fr}
-  form{padding:16px}
-  .acciones .btn{flex:1 1 calc(50% - 10px)}
-  .acciones .espacio{display:none}
-}
+textarea{min-height:84px;resize:vertical}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+fieldset:disabled input,fieldset:disabled select,fieldset:disabled textarea{background:var(--ro);border-color:transparent;appearance:none}
+.check{display:flex;align-items:center;gap:10px}.check input{width:20px;height:20px;min-height:0;accent-color:var(--pri)}.check label{margin:0}
+:focus-visible{outline:2px solid var(--pri);outline-offset:1px}
+.btn{font:600 .92rem Figtree,sans-serif;min-height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--linea);background:var(--panel);color:var(--tinta);cursor:pointer;display:inline-flex;align-items:center;text-decoration:none}
+.btn:hover{border-color:var(--pri)}.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}.btn.pri:hover{background:var(--pri2)}
+.btn.pel{color:var(--peligro);border-color:var(--peligro);background:transparent}.btn[disabled]{opacity:.5;cursor:not-allowed}
+.acciones{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;padding-top:14px;border-top:1px solid var(--linea)}.esp{flex:1}
+.tabla{overflow-x:auto;margin-bottom:14px}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--linea);vertical-align:top}th{color:var(--suave);font-weight:500;white-space:nowrap}
+.venc{color:var(--peligro);font-weight:600}
+details{margin-top:6px}summary{list-style:none;display:inline-flex}summary::-webkit-details-marker{display:none}
+details form{margin-top:12px}
+.pub{max-width:640px;margin:0 auto;padding:24px}.pub .avatar{width:120px;height:120px;font-size:3rem}
+dl{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;margin:16px 0}dt{color:var(--suave)}dd{margin:0}
+.ok{color:var(--pri);font-weight:600}
+dialog{border:1px solid var(--linea);border-radius:var(--r);background:var(--panel);color:var(--tinta);padding:24px;width:min(380px,92vw)}
+dialog::backdrop{background:rgba(0,0,0,.45)}dialog form{display:grid;gap:12px}
+.err{color:var(--peligro);font-size:.9rem;min-height:1.2em}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--tinta);color:var(--panel);padding:11px 18px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:10}
+#toast.ver{opacity:1}#toast.error{background:var(--peligro);color:#fff}
+@media (max-width:820px){.layout{grid-template-columns:1fr}#lista{max-height:220px}}
+@media (max-width:520px){.grid{grid-template-columns:1fr}.det{padding:14px}.avatar{width:72px;height:72px}}
 @media (prefers-reduced-motion:reduce){#toast{transition:none}}
 </style>
 </head>
 <body>
 <div class="app">
   <header class="top">
-    <h1>Carnet Digital</h1>
-    <span class="modo" id="modo-datos"></span>
+    <a class="marca" href="./">VEXAVET<small>Carnet digital</small></a>
+    <nav id="nav" aria-label="Secciones"></nav>
+    <div id="sesion"></div>
   </header>
-
-  <div class="aviso" id="aviso" hidden>
-    Aún no conectaste la base de datos, así que estás en <strong>modo demo</strong>: los cambios se pierden al recargar.
-    Configura <code>SUPABASE_URL</code> y <code>SUPABASE_ANON_KEY</code> en este archivo (ver README).
-  </div>
-
-  <div class="layout">
-    <aside class="panel lista" aria-label="Lista de mascotas">
-      <div class="lista-cab">
-        <input id="buscar" type="search" placeholder="Buscar por nombre o dueño" aria-label="Buscar mascota">
-        <button class="btn pri" type="button" id="btn-nueva" title="Registrar una mascota nueva">Nueva</button>
-      </div>
-      <ul id="lista"></ul>
-    </aside>
-
-    <main class="panel">
-      <div class="sin-seleccion" id="sin-seleccion">
-        <p>Selecciona una mascota de la lista o registra una nueva.</p>
-      </div>
-
-      <form id="form" class="solo-lectura" hidden autocomplete="off" novalidate>
-        <div class="form-cab">
-          <div class="ficha-id">
-            <div class="avatar" id="avatar"><img id="avatar-img" alt="Foto de perfil de la mascota" hidden><span id="avatar-ini" aria-hidden="true">?</span></div>
-            <div>
-              <h2 id="titulo-form">Mascota</h2>
-              <span class="etiqueta-modo" id="etiqueta-modo">Solo lectura</span>
-            </div>
-          </div>
-          <div class="foto-acc" id="foto-acc" hidden>
-            <input type="file" id="foto-input" accept="image/jpeg,image/png,image/webp" hidden>
-            <button type="button" class="btn" id="btn-foto">Subir foto</button>
-            <button type="button" class="btn" id="btn-quitar-foto" hidden>Quitar foto</button>
-          </div>
-        </div>
-
-        <fieldset id="campos">
-          <legend>Datos de la mascota</legend>
-          <div class="grid">
-            <div><label for="nombre">Nombre *</label><input id="nombre" name="nombre" required></div>
-            <div><label for="especie">Especie</label>
-              <select id="especie" name="especie">
-                <option>Perro</option><option>Gato</option><option>Ave</option><option>Conejo</option><option>Roedor</option><option>Reptil</option><option>Otra</option>
-              </select></div>
-            <div><label for="raza">Raza</label><input id="raza" name="raza"></div>
-            <div><label for="sexo">Sexo</label>
-              <select id="sexo" name="sexo"><option value="">—</option><option>Macho</option><option>Hembra</option></select></div>
-            <div><label for="fecha_nacimiento">Fecha de nacimiento</label><input id="fecha_nacimiento" name="fecha_nacimiento" type="date"></div>
-            <div><label for="peso_kg">Peso (kg)</label><input id="peso_kg" name="peso_kg" type="number" step="0.01" min="0" inputmode="decimal"></div>
-            <div><label for="color">Color</label><input id="color" name="color"></div>
-            <div><label for="microchip">Microchip</label><input id="microchip" name="microchip"></div>
-            <div class="check"><input id="esterilizado" name="esterilizado" type="checkbox"><label for="esterilizado">Esterilizado</label></div>
-            <div class="check"><input id="vacunas_al_dia" name="vacunas_al_dia" type="checkbox"><label for="vacunas_al_dia">Vacunas al día</label></div>
-            <div class="full"><label for="alergias">Alergias</label><input id="alergias" name="alergias"></div>
-          </div>
-
-          <fieldset>
-            <legend>Dueño</legend>
-            <div class="grid">
-              <div><label for="duenio_nombre">Nombre</label><input id="duenio_nombre" name="duenio_nombre"></div>
-              <div><label for="duenio_telefono">Teléfono</label><input id="duenio_telefono" name="duenio_telefono" type="tel" inputmode="tel"></div>
-            </div>
-          </fieldset>
-
-          <fieldset>
-            <legend>Observaciones</legend>
-            <label for="notas" class="sr" style="position:absolute;left:-9999px">Notas</label>
-            <textarea id="notas" name="notas" placeholder="Historial, tratamientos, comportamiento…"></textarea>
-          </fieldset>
-        </fieldset>
-
-        <div class="acciones">
-          <button type="button" class="btn pri" id="btn-editar">Editar</button>
-          <button type="submit" class="btn pri" id="btn-guardar" hidden>Guardar cambios</button>
-          <button type="button" class="btn" id="btn-cancelar" hidden>Cancelar</button>
-          <span class="espacio"></span>
-          <button type="button" class="btn peligro" id="btn-eliminar">Eliminar</button>
-        </div>
-      </form>
-    </main>
-  </div>
+  <main id="app"></main>
 </div>
+
+<dialog id="dlg">
+  <form id="fl">
+    <h2>Iniciar sesión</h2>
+    <div><label for="l-mail">Correo</label><input id="l-mail" type="email" autocomplete="username" required></div>
+    <div><label for="l-pass">Contraseña</label><input id="l-pass" type="password" autocomplete="current-password" required></div>
+    <div class="err" id="l-err" role="alert"></div>
+    <div class="fila"><button class="btn pri" id="l-ok">Entrar</button><button type="button" class="btn" id="l-x">Cancelar</button></div>
+  </form>
+</dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 /* ============ CONFIGURACIÓN ============ */
-const SUPABASE_URL      = "https://ygszxwuyausdpmpejpwu.supabase.co";      // https://xxxx.supabase.co
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlnc3p4d3V5YXVzZHBtcGVqcHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4NTU3MzAsImV4cCI6MjEwNjQzMTczMH0.F4QkVCP_kbiOLGFr0UzaLQrsBbgGVF-7e6mL3tNcC90";  // clave "anon public"
+const SUPABASE_URL = "https://ygszxwuyausdpmpejpwu.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlnc3p4d3V5YXVzZHBtcGVqcHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4NTU3MzAsImV4cCI6MjEwNjQzMTczMH0.F4QkVCP_kbiOLGFr0UzaLQrsBbgGVF-7e6mL3tNcC90";
+const ROL_ADMIN = "admin", ROL_VET = "veterinario";   // deben coincidir con la columna perfiles.rol
 /* ======================================= */
-
-const CAMPOS_TEXTO = ["nombre","especie","raza","sexo","fecha_nacimiento","peso_kg","color","microchip","alergias","duenio_nombre","duenio_telefono","notas"];
-const CAMPOS_BOOL  = ["esterilizado","vacunas_al_dia"];
-
-const $ = id => document.getElementById(id);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const BUCKET = "fotos-mascotas";
-const rutaDesdeUrl = u => (u && u.includes("/" + BUCKET + "/")) ? decodeURIComponent(u.split("/" + BUCKET + "/")[1].split("?")[0]) : null;
-const configurado = !SUPABASE_URL.startsWith("PEGA_") && !SUPABASE_ANON_KEY.startsWith("PEGA_");
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fecha = d => d ? new Date(d.length > 10 ? d : d + "T00:00:00").toLocaleDateString("es-EC") : "—";
+const hoy = () => new Date().toISOString().slice(0, 10);
+const publicId = new URLSearchParams(location.search).get("m");
+const enlace = id => location.origin + location.pathname + "?m=" + id;
+const isAdmin = () => perfil?.rol === ROL_ADMIN;
 
-/* ---------- Capa de datos ---------- */
-let api;
-if (configurado) {
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const ok = ({data, error}) => { if (error) throw error; return data; };
-  api = {
-    listar:     async ()     => ok(await sb.from("mascotas").select("*").order("nombre")),
-    crear:      async fila   => ok(await sb.from("mascotas").insert(fila).select().single()),
-    actualizar: async (id,f) => ok(await sb.from("mascotas").update(f).eq("id", id).select().single()),
-    eliminar:   async id     => ok(await sb.from("mascotas").delete().eq("id", id)),
-    subirFoto:  async blob   => {
-      const ruta = crypto.randomUUID() + ".jpg";
-      const { error } = await sb.storage.from(BUCKET).upload(ruta, blob, { contentType: "image/jpeg", cacheControl: "3600" });
-      if (error) throw error;
-      return sb.storage.from(BUCKET).getPublicUrl(ruta).data.publicUrl;
-    },
-    borrarFoto: async url    => {
-      const ruta = rutaDesdeUrl(url); if (!ruta) return;
-      await sb.storage.from(BUCKET).remove([ruta]);
-    },
-  };
-  $("modo-datos").textContent = "Conectado a PostgreSQL (Supabase)";
-} else {
-  // Modo demo en memoria
-  let mem = [{id:"1",nombre:"Luna",especie:"Perro",raza:"Labrador",sexo:"Hembra",fecha_nacimiento:"2021-03-14",peso_kg:24.5,color:"Dorado",microchip:"",esterilizado:true,vacunas_al_dia:true,alergias:"",duenio_nombre:"María Pérez",duenio_telefono:"0991234567",notas:""}];
-  api = {
-    listar:     async ()     => [...mem].sort((a,b)=>a.nombre.localeCompare(b.nombre)),
-    crear:      async fila   => { const r = {...fila,id:String(Date.now())}; mem.push(r); return r; },
-    actualizar: async (id,f) => { mem = mem.map(m => m.id===id ? {...m,...f} : m); return mem.find(m=>m.id===id); },
-    eliminar:   async id     => { mem = mem.filter(m => m.id!==id); },
-    subirFoto:  blob => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); }),
-    borrarFoto: async () => {},
-  };
-  $("modo-datos").textContent = "Modo demo (sin base de datos)";
-  $("aviso").hidden = false;
+let perfil = null, mascotas = [], selId = null, tab = "datos", vista = "mascotas", nueva = false, editando = false;
+let fotoArchivo = null, fotoPrev = null, fotoQuitada = false;
+
+const CAMPOS = [
+  ["nombre","Nombre *","text"],["especie","Especie","sel",["Perro","Gato","Ave","Conejo","Roedor","Reptil","Otra"]],
+  ["raza","Raza","text"],["sexo","Sexo","sel",["","Macho","Hembra"]],
+  ["fecha_nacimiento","Fecha de nacimiento","date"],["peso_kg","Peso (kg)","number"],
+  ["color","Color","text"],["microchip","Microchip","text"],
+  ["esterilizado","Esterilizado","check"],["vacunas_al_dia","Vacunas al día","check"],
+  ["alergias","Alergias","text"],["duenio_nombre","Dueño · nombre","text"],["duenio_telefono","Dueño · teléfono","tel"],
+  ["duenio_email","Dueño · correo","email"],["duenio_direccion","Dueño · dirección","text"],["notas","Observaciones","area"]
+];
+const CLIN = {
+  vacunas:{t:"Vacunas",o:"fecha",c:[["vacuna","Vacuna","text",1],["fecha","Fecha","date",1],["proxima_dosis","Próxima dosis","date"],["lote","Lote","text"],["veterinario","Veterinario","text"]]},
+  consultas:{t:"Consultas",o:"fecha",c:[["fecha","Fecha","date",1],["motivo","Motivo","text",1],["diagnostico","Diagnóstico","text"],["tratamiento","Tratamiento","text"],["temperatura_c","Temp. °C","number"],["frecuencia_cardiaca","FC (lpm)","number"],["peso_kg","Peso kg","number"],["veterinario","Veterinario","text"]]},
+  desparasitaciones:{t:"Desparasitación",o:"fecha",c:[["tipo","Tipo","text",1],["producto","Producto","text",1],["fecha","Fecha","date",1],["proxima_dosis","Próxima dosis","date"],["peso_kg","Peso kg","number"]]},
+  cirugias:{t:"Cirugías",o:"fecha",c:[["fecha","Fecha","date",1],["procedimiento","Procedimiento","text",1],["anestesia","Anestesia","text"],["veterinario","Veterinario","text"],["observaciones","Observaciones","text"]]},
+  examenes:{t:"Exámenes",o:"fecha",c:[["fecha","Fecha","date",1],["tipo","Tipo","text",1],["laboratorio","Laboratorio","text"],["resultado","Resultado","text"]]},
+  medicacion:{t:"Medicación",o:"fecha_inicio",c:[["medicamento","Medicamento","text",1],["dosis","Dosis","text"],["frecuencia","Frecuencia","text"],["fecha_inicio","Inicio","date",1],["fecha_fin","Fin","date"],["indicaciones","Indicaciones","text"]]}
+};
+
+function toast(msg, error = false){
+  const t = $("toast"); t.textContent = msg; t.className = "ver" + (error ? " error" : "");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.className = "", 3200);
+}
+async function log(accion, entidad, detalle){
+  if (!perfil) return;
+  await sb.from("registro_actividad").insert({usuario_id: perfil.id, usuario_email: perfil.email, accion, entidad: entidad || null, detalle: detalle || null});
+}
+const avatarHTML = (url, nombre) => url ? `<img src="${esc(url)}" alt="Foto de ${esc(nombre)}">` : esc((nombre || "?")[0].toUpperCase());
+const edad = f => { if (!f) return "—"; const d = new Date(f), n = new Date(); let m = (n.getFullYear() - d.getFullYear()) * 12 + n.getMonth() - d.getMonth(); if (n.getDate() < d.getDate()) m--; return m >= 12 ? Math.floor(m / 12) + " años" + (m % 12 ? " " + (m % 12) + " m" : "") : m + " meses"; };
+
+/* ---------- Sesión ---------- */
+async function cargarPerfil(u){
+  const { data } = await sb.from("perfiles").select("*").eq("id", u.id).maybeSingle();
+  if (!data || !data.activo){ await sb.auth.signOut(); perfil = null; return data ? "bloqueado" : "sinperfil"; }
+  perfil = data; return null;
+}
+$("fl").addEventListener("submit", async e => {
+  e.preventDefault(); $("l-err").textContent = ""; $("l-ok").disabled = true;
+  const { data, error } = await sb.auth.signInWithPassword({email: $("l-mail").value.trim(), password: $("l-pass").value});
+  if (error){ $("l-err").textContent = "Correo o contraseña incorrectos."; $("l-ok").disabled = false; return; }
+  const r = await cargarPerfil(data.user); $("l-ok").disabled = false;
+  if (r){ $("l-err").textContent = r === "bloqueado" ? "Tu acceso está bloqueado o pendiente de aprobación. Contacta al administrador." : "Tu cuenta no tiene perfil asignado. Contacta al administrador."; return; }
+  $("dlg").close(); $("fl").reset(); await log("Inició sesión"); vista = "mascotas"; render();
+});
+$("l-x").onclick = () => $("dlg").close();
+
+/* ---------- Estructura ---------- */
+function pintarCabecera(){
+  $("sesion").innerHTML = perfil
+    ? `<span class="chip">${esc(perfil.nombre)} · ${esc(perfil.rol)}</span><button class="btn" id="b-salir">Salir</button>`
+    : `<button class="btn pri" id="b-login">Iniciar sesión</button>`;
+  if ($("b-login")) $("b-login").onclick = () => $("dlg").showModal();
+  if ($("b-salir")) $("b-salir").onclick = async () => { await log("Cerró sesión"); await sb.auth.signOut(); perfil = null; selId = null; render(); };
+  const secs = [["mascotas","Mascotas"], ...(isAdmin() ? [["usuarios","Usuarios"],["actividad","Actividad"]] : [])];
+  $("nav").innerHTML = !perfil ? "" : publicId ? `<a class="btn" href="${location.pathname}">Ir al panel</a>`
+    : secs.map(([v,l]) => `<button class="btn ${v === vista ? "pri" : ""}" data-v="${v}">${l}</button>`).join("");
+  $("nav").querySelectorAll("[data-v]").forEach(b => b.onclick = () => { vista = b.dataset.v; render(); });
+}
+function render(){
+  pintarCabecera();
+  if (publicId) return pintarPublico();
+  if (!perfil) return $("app").innerHTML = `<div class="panel pad"><h2>Acceso del personal</h2><p>Inicia sesión como veterinario o administrador para ver el listado de pacientes. Los perfiles individuales se comparten con un enlace público.</p></div>`;
+  if (vista !== "mascotas" && !isAdmin()) vista = "mascotas";
+  ({mascotas: vistaMascotas, usuarios: vistaUsuarios, actividad: vistaActividad})[vista]();
 }
 
-/* ---------- Estado ---------- */
-let mascotas = [];
-let seleccionId = null;
-let modo = "vista"; // vista | editar | nueva
-
-const form = $("form");
-
-/* ---------- Foto de perfil ---------- */
-let fotoUrl = null;        // URL guardada en la base de datos
-let fotoArchivo = null;    // imagen nueva elegida (aún sin subir)
-let fotoPreview = null;    // URL temporal para mostrar la imagen nueva
-let fotoQuitada = false;   // el usuario pidió quitar la foto
-
-function pintarAvatar(){
-  const url = fotoArchivo ? fotoPreview : (fotoQuitada ? null : fotoUrl);
-  const img = $("avatar-img"), ini = $("avatar-ini");
-  img.hidden = !url; ini.hidden = !!url;
-  if (url) img.src = url; else img.removeAttribute("src");
-  ini.textContent = (form.elements.nombre.value.trim()[0] || "?").toUpperCase();
-}
-function actualizarBotonesFoto(){
-  const edit = modo !== "vista";
-  const hayFoto = !!fotoArchivo || (!!fotoUrl && !fotoQuitada);
-  $("foto-acc").hidden = !edit;
-  $("btn-foto").textContent = hayFoto ? "Cambiar foto" : "Subir foto";
-  $("btn-quitar-foto").hidden = !(edit && hayFoto);
-}
-function reiniciarFoto(url){
-  if (fotoPreview) URL.revokeObjectURL(fotoPreview);
-  fotoUrl = url || null; fotoArchivo = null; fotoPreview = null; fotoQuitada = false;
-  pintarAvatar();
-}
-// Reduce la imagen a máx. 800 px y la convierte a JPEG (pesa ~100-200 KB)
-async function reducirImagen(file, max = 800){
-  const bmp = await createImageBitmap(file);
-  const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
-  const c = document.createElement("canvas");
-  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
-  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
-  return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error("No se pudo procesar la imagen")), "image/jpeg", 0.85));
+/* ---------- Perfil público ---------- */
+async function pintarPublico(){
+  $("app").innerHTML = `<div class="panel pad">Cargando…</div>`;
+  const { data, error } = await sb.rpc("mascota_publica", {p_id: publicId});
+  if (error || !data) return $("app").innerHTML = `<div class="panel pad"><h2>Perfil no encontrado</h2><p>El enlace no corresponde a ninguna mascota registrada.</p></div>`;
+  const m = data.mascota, hoyS = hoy();
+  $("app").innerHTML = `<article class="panel pub">
+    <div class="cab"><div class="avatar">${avatarHTML(m.foto_url, m.nombre)}</div><div class="cab-t"><h1>${esc(m.nombre)}</h1><span class="chip">${esc([m.especie, m.raza].filter(Boolean).join(" · "))}</span>
+    <span class="${m.vacunas_al_dia ? "ok" : "venc"}">${m.vacunas_al_dia ? "Vacunas al día" : "Vacunas pendientes"}</span></div></div>
+    <dl><dt>Sexo</dt><dd>${esc(m.sexo || "—")}</dd><dt>Edad</dt><dd>${edad(m.fecha_nacimiento)}</dd><dt>Color</dt><dd>${esc(m.color || "—")}</dd>
+    <dt>Peso</dt><dd>${m.peso_kg ? esc(m.peso_kg) + " kg" : "—"}</dd><dt>Esterilizado</dt><dd>${m.esterilizado ? "Sí" : "No"}</dd><dt>Microchip</dt><dd>${esc(m.microchip || "—")}</dd></dl>
+    <h3>Vacunas</h3><div class="tabla"><table><thead><tr><th>Vacuna</th><th>Fecha</th><th>Próxima dosis</th></tr></thead><tbody>
+    ${data.vacunas.map(v => `<tr><td>${esc(v.vacuna)}</td><td>${fecha(v.fecha)}</td><td class="${v.proxima_dosis && v.proxima_dosis < hoyS ? "venc" : ""}">${fecha(v.proxima_dosis)}${v.proxima_dosis && v.proxima_dosis < hoyS ? " · vencida" : ""}</td></tr>`).join("") || `<tr><td colspan="3">Sin vacunas registradas.</td></tr>`}
+    </tbody></table></div></article>`;
 }
 
-function toast(msg, error=false){
-  const t = $("toast");
-  t.textContent = msg; t.className = "ver" + (error ? " error" : "");
-  clearTimeout(toast.t); toast.t = setTimeout(()=> t.className = "", 3200);
+/* ---------- Mascotas (personal) ---------- */
+async function cargarMascotas(){
+  const { data, error } = await sb.from("mascotas").select("*").order("nombre");
+  if (error) return toast("No se pudo cargar: " + error.message, true);
+  mascotas = data; pintarLista(); pintarDetalle();
 }
-
-/* ---------- Lista ---------- */
+function vistaMascotas(){
+  $("app").innerHTML = `<div class="layout"><aside class="panel lista" aria-label="Mascotas"><div class="lista-cab"><input id="buscar" type="search" placeholder="Buscar por nombre o dueño" aria-label="Buscar"><button class="btn pri" id="b-nueva">Nueva</button></div><ul id="lista"></ul></aside><section class="panel det" id="det"></section></div>`;
+  $("buscar").oninput = pintarLista;
+  $("b-nueva").onclick = () => { if (!descartar()) return; selId = null; nueva = true; editando = false; tab = "datos"; reiniciarFoto(); pintarLista(); pintarDetalle(); };
+  cargarMascotas();
+}
+function descartar(){ return !(editando || nueva) || confirm("Tienes cambios sin guardar. ¿Descartarlos?"); }
 function pintarLista(){
-  const q = $("buscar").value.trim().toLowerCase();
-  const ul = $("lista"); ul.innerHTML = "";
-  const filtradas = mascotas.filter(m => (m.nombre + " " + (m.duenio_nombre||"")).toLowerCase().includes(q));
-  if (!filtradas.length){
-    const d = document.createElement("li"); d.className = "vacio";
-    d.textContent = mascotas.length ? "Sin resultados para esa búsqueda." : "Aún no hay mascotas. Pulsa Nueva para registrar la primera.";
-    ul.appendChild(d); return;
-  }
-  filtradas.forEach(m => {
+  const q = ($("buscar")?.value || "").trim().toLowerCase(), ul = $("lista");
+  const f = mascotas.filter(m => (m.nombre + " " + (m.duenio_nombre || "")).toLowerCase().includes(q));
+  ul.innerHTML = f.length ? "" : `<li class="vacio">${mascotas.length ? "Sin resultados." : "Aún no hay mascotas."}</li>`;
+  f.forEach(m => {
     const li = document.createElement("li");
-    const b = document.createElement("button"); b.type = "button";
-    if (m.id === seleccionId) b.setAttribute("aria-current","true");
-    const mini = document.createElement("span"); mini.className = "mini";
-    if (m.foto_url){ const im = document.createElement("img"); im.src = m.foto_url; im.alt = ""; im.loading = "lazy"; mini.appendChild(im); }
-    else mini.textContent = (m.nombre[0] || "?").toUpperCase();
-    const txt = document.createElement("span");
-    const n = document.createElement("span"); n.className = "n"; n.textContent = m.nombre;
-    const s = document.createElement("span"); s.className = "s";
-    s.textContent = [m.especie, m.raza, m.duenio_nombre].filter(Boolean).join(" · ");
-    txt.append(n, s);
-    b.append(mini, txt);
-    b.addEventListener("click", () => seleccionar(m.id));
-    li.appendChild(b); ul.appendChild(li);
+    li.innerHTML = `<button type="button" ${m.id === selId ? 'aria-current="true"' : ""}><span class="mini">${avatarHTML(m.foto_url, m.nombre)}</span><span><span class="n">${esc(m.nombre)}</span><span class="s">${esc([m.especie, m.raza, m.duenio_nombre].filter(Boolean).join(" · "))}</span></span></button>`;
+    li.firstChild.onclick = () => { if (!descartar()) return; selId = m.id; nueva = false; editando = false; tab = "datos"; reiniciarFoto(); pintarLista(); pintarDetalle(); if (innerWidth <= 820) $("det").scrollIntoView({behavior: "smooth"}); };
+    ul.appendChild(li);
   });
 }
-
-/* ---------- Formulario ---------- */
-function llenarForm(m){
-  CAMPOS_TEXTO.forEach(c => form.elements[c].value = m?.[c] ?? (c==="especie" ? "Perro" : ""));
-  CAMPOS_BOOL.forEach(c => form.elements[c].checked = !!m?.[c]);
-  reiniciarFoto(m?.foto_url);
+function reiniciarFoto(){ if (fotoPrev) URL.revokeObjectURL(fotoPrev); fotoArchivo = fotoPrev = null; fotoQuitada = false; }
+function pintarDetalle(){
+  const det = $("det"), m = mascotas.find(x => x.id === selId);
+  if (!m && !nueva) return det.innerHTML = `<p class="vacio">Selecciona una mascota de la lista o registra una nueva.</p>`;
+  det.innerHTML = `<input type="file" id="foto-in" accept="image/jpeg,image/png,image/webp" hidden><div class="cab" id="cab"></div>
+    ${nueva ? "" : `<div class="tabs" role="tablist">${[["datos","Datos"], ...Object.entries(CLIN).map(([k,v]) => [k, v.t])].map(([k,l]) => `<button class="tab" role="tab" data-t="${k}" aria-current="${k === tab}">${l}</button>`).join("")}</div>`}
+    <div id="cuerpo"></div>`;
+  det.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { tab = b.dataset.t; pintarDetalle(); });
+  pintarCab();
+  tab === "datos" ? pintarDatos(m) : pintarClin(tab);
 }
-function leerForm(){
-  const fila = {};
-  CAMPOS_TEXTO.forEach(c => {
-    const v = form.elements[c].value.trim();
-    fila[c] = v === "" ? null : (c === "peso_kg" ? Number(v) : v);
-  });
-  CAMPOS_BOOL.forEach(c => fila[c] = form.elements[c].checked);
-  return fila;
+function pintarCab(){
+  const m = mascotas.find(x => x.id === selId) || {}, ed = editando || nueva;
+  const url = fotoArchivo ? fotoPrev : (fotoQuitada ? null : m.foto_url);
+  $("cab").innerHTML = `<div class="avatar">${avatarHTML(url, m.nombre)}</div><div class="cab-t"><h2>${nueva ? "Nueva mascota" : esc(m.nombre)}</h2>
+    ${nueva ? "" : `<div class="fila"><button class="btn" id="b-copiar">Copiar enlace público</button><a class="btn" target="_blank" rel="noopener" href="${enlace(m.id)}">Ver perfil público</a></div>`}
+    ${ed ? `<div class="fila"><button type="button" class="btn" id="b-foto">${url ? "Cambiar" : "Subir"} foto</button>${url ? '<button type="button" class="btn" id="b-qfoto">Quitar foto</button>' : ""}</div>` : ""}</div>`;
+  if ($("b-copiar")) $("b-copiar").onclick = async () => { try { await navigator.clipboard.writeText(enlace(m.id)); toast("Enlace copiado."); } catch { prompt("Copia este enlace:", enlace(m.id)); } };
+  if ($("b-foto")) $("b-foto").onclick = () => $("foto-in").click();
+  if ($("b-qfoto")) $("b-qfoto").onclick = () => { reiniciarFoto(); fotoQuitada = true; pintarCab(); };
 }
-function aplicarModo(nuevo){
-  modo = nuevo;
-  const edit = modo !== "vista";
-  form.classList.toggle("solo-lectura", !edit);
-  [...form.querySelectorAll("input,select,textarea")].forEach(el => {
-    if (el.type === "checkbox") el.tabIndex = edit ? 0 : -1;
-    else el.disabled = false;
-    el.readOnly = !edit && el.tagName !== "SELECT" && el.type !== "checkbox";
-  });
-  form.querySelectorAll("select").forEach(s => s.style.pointerEvents = edit ? "" : "none");
-  $("btn-editar").hidden   = edit;
-  $("btn-eliminar").hidden = modo === "nueva";
-  $("btn-guardar").hidden  = !edit;
-  $("btn-cancelar").hidden = !edit;
-  const et = $("etiqueta-modo");
-  et.textContent = modo === "vista" ? "Solo lectura" : modo === "editar" ? "Editando" : "Nueva mascota";
-  et.classList.toggle("edit", edit);
-  $("titulo-form").textContent = modo === "nueva" ? "Nueva mascota" : (form.elements.nombre.value || "Mascota");
-  actualizarBotonesFoto(); pintarAvatar();
-}
-function mostrarForm(visible){
-  form.hidden = !visible; $("sin-seleccion").hidden = visible;
-}
-
-function seleccionar(id){
-  if (modo !== "vista" && !confirm("Tienes cambios sin guardar. ¿Descartarlos?")) return;
-  seleccionId = id;
-  llenarForm(mascotas.find(m => m.id === id));
-  mostrarForm(true); aplicarModo("vista"); pintarLista();
-  if (window.innerWidth <= 820) form.scrollIntoView({behavior:"smooth", block:"start"});
-}
-
-/* ---------- Eventos ---------- */
-$("buscar").addEventListener("input", pintarLista);
-form.elements.nombre.addEventListener("input", pintarAvatar);
-
-$("btn-foto").addEventListener("click", () => $("foto-input").click());
-$("foto-input").addEventListener("change", async e => {
+$("app").addEventListener("change", async e => {
+  if (e.target.id !== "foto-in") return;
   const f = e.target.files[0]; e.target.value = "";
-  if (!f) return;
-  if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { toast("Elige una imagen JPG, PNG o WebP.", true); return; }
-  if (f.size > 15 * 1024 * 1024) { toast("La imagen es muy pesada (máx. 15 MB).", true); return; }
+  if (!f || !/^image\/(jpeg|png|webp)$/.test(f.type)) return f && toast("Elige una imagen JPG, PNG o WebP.", true);
   try {
-    const blob = await reducirImagen(f);
-    if (fotoPreview) URL.revokeObjectURL(fotoPreview);
-    fotoArchivo = blob; fotoPreview = URL.createObjectURL(blob); fotoQuitada = false;
-    pintarAvatar(); actualizarBotonesFoto();
-  } catch (err) { console.error(err); toast("No se pudo leer la imagen.", true); }
-});
-$("btn-quitar-foto").addEventListener("click", () => {
-  if (fotoPreview) URL.revokeObjectURL(fotoPreview);
-  fotoArchivo = null; fotoPreview = null; fotoQuitada = true;
-  pintarAvatar(); actualizarBotonesFoto();
+    const bmp = await createImageBitmap(f), k = Math.min(1, 800 / Math.max(bmp.width, bmp.height)), c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k); c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, "image/jpeg", .85));
+    reiniciarFoto(); fotoArchivo = blob; fotoPrev = URL.createObjectURL(blob); pintarCab();
+  } catch { toast("No se pudo leer la imagen.", true); }
 });
 
-$("btn-nueva").addEventListener("click", () => {
-  if (modo !== "vista" && !confirm("Tienes cambios sin guardar. ¿Descartarlos?")) return;
-  seleccionId = null; llenarForm(null);
-  mostrarForm(true); aplicarModo("nueva"); pintarLista();
-  form.elements.nombre.focus();
-  if (window.innerWidth <= 820) form.scrollIntoView({behavior:"smooth", block:"start"});
-});
-
-$("btn-editar").addEventListener("click", () => { aplicarModo("editar"); form.elements.nombre.focus(); });
-
-$("btn-cancelar").addEventListener("click", () => {
-  if (modo === "nueva") { mostrarForm(false); aplicarModo("vista"); return; }
-  llenarForm(mascotas.find(m => m.id === seleccionId)); aplicarModo("vista");
-});
-
-form.addEventListener("submit", async e => {
-  e.preventDefault();
-  if (!form.elements.nombre.value.trim()){
-    toast("El nombre es obligatorio.", true); form.elements.nombre.focus(); return;
-  }
-  const btn = $("btn-guardar"); btn.disabled = true;
+function campo([k, l, t, o], v){
+  if (t === "check") return `<div class="check"><input id="${k}" name="${k}" type="checkbox" ${v ? "checked" : ""}><label for="${k}">${l}</label></div>`;
+  const i = t === "sel" ? `<select id="${k}" name="${k}">${o.map(x => `<option value="${x}" ${x === v ? "selected" : ""}>${x || "—"}</option>`).join("")}</select>`
+    : t === "area" ? `<textarea id="${k}" name="${k}">${esc(v)}</textarea>`
+    : `<input id="${k}" name="${k}" type="${t}" value="${esc(v)}" ${t === "number" ? 'step="0.01" min="0"' : ""}>`;
+  return `<div class="${["area"].includes(t) || ["alergias","duenio_direccion"].includes(k) ? "full" : ""}"><label for="${k}">${l}</label>${i}</div>`;
+}
+function pintarDatos(m = {}){
+  const ed = editando || nueva;
+  $("cuerpo").innerHTML = `<form id="f" novalidate><fieldset ${ed ? "" : "disabled"}><div class="grid">${CAMPOS.map(c => campo(c, m[c[0]] ?? (c[0] === "especie" ? "Perro" : ""))).join("")}</div></fieldset>
+    <div class="acciones">${ed ? `<button class="btn pri" id="b-guardar">Guardar cambios</button><button type="button" class="btn" id="b-cancelar">Cancelar</button>` : `<button type="button" class="btn pri" id="b-editar">Editar</button>`}
+    <span class="esp"></span>${isAdmin() && !nueva ? `<button type="button" class="btn pel" id="b-eliminar">Eliminar</button>` : ""}</div></form>`;
+  if ($("b-editar")) $("b-editar").onclick = () => { editando = true; pintarCab(); pintarDatos(m); };
+  if ($("b-cancelar")) $("b-cancelar").onclick = () => { reiniciarFoto(); if (nueva) { nueva = false; pintarDetalle(); } else { editando = false; pintarCab(); pintarDatos(m); } };
+  if ($("b-eliminar")) $("b-eliminar").onclick = () => eliminar(m);
+  $("f").onsubmit = e => { e.preventDefault(); guardar(m); };
+}
+async function borrarFoto(url){ const p = url && url.split("/" + BUCKET + "/")[1]; if (p) await sb.storage.from(BUCKET).remove([decodeURIComponent(p.split("?")[0])]); }
+async function guardar(m){
+  const f = $("f"), fila = {};
+  CAMPOS.forEach(([k,,t]) => { if (t === "check") fila[k] = f.elements[k].checked; else { const v = f.elements[k].value.trim(); fila[k] = v === "" ? null : t === "number" ? Number(v) : v; } });
+  if (!fila.nombre) { toast("El nombre es obligatorio.", true); return f.elements.nombre.focus(); }
+  fila.especie ||= "Perro";
+  $("b-guardar").disabled = true; let subida = null;
   try {
-    const fila = leerForm();
-    const fotoAnterior = fotoUrl;
-    let fotoSubida = null;
-    if (fotoArchivo) { fotoSubida = await api.subirFoto(fotoArchivo); fila.foto_url = fotoSubida; }
-    else if (fotoQuitada) { fila.foto_url = null; }
-    let guardada;
-    try {
-      guardada = modo === "nueva" ? await api.crear(fila) : await api.actualizar(seleccionId, fila);
-    } catch (e2) {
-      if (fotoSubida) api.borrarFoto(fotoSubida).catch(() => {}); // evita fotos huérfanas
-      throw e2;
-    }
-    if (fotoAnterior && (fotoSubida || fotoQuitada)) api.borrarFoto(fotoAnterior).catch(() => {});
-    mascotas = await api.listar();
-    seleccionId = guardada.id;
-    llenarForm(guardada); aplicarModo("vista"); pintarLista();
-    toast("Cambios guardados.");
-  } catch (err) {
-    console.error(err);
-    toast("No se pudo guardar: " + (err.message || "error desconocido"), true);
-  } finally { btn.disabled = false; }
-});
+    if (fotoArchivo){
+      const ruta = crypto.randomUUID() + ".jpg";
+      const { error } = await sb.storage.from(BUCKET).upload(ruta, fotoArchivo, {contentType: "image/jpeg"}); if (error) throw error;
+      subida = sb.storage.from(BUCKET).getPublicUrl(ruta).data.publicUrl; fila.foto_url = subida;
+    } else if (fotoQuitada) fila.foto_url = null;
+    const q = nueva ? sb.from("mascotas").insert(fila) : sb.from("mascotas").update({...fila, actualizado_en: new Date().toISOString()}).eq("id", selId);
+    const { data, error } = await q.select().single();
+    if (error){ if (subida) borrarFoto(subida); throw error; }
+    if (m?.foto_url && (subida || fotoQuitada)) borrarFoto(m.foto_url).catch(() => {});
+    log(nueva ? "Creó mascota" : "Editó mascota", "mascotas", fila.nombre);
+    selId = data.id; nueva = false; editando = false; reiniciarFoto(); await cargarMascotas(); toast("Cambios guardados.");
+  } catch (err) { toast("No se pudo guardar: " + (err.message || "error"), true); $("b-guardar") && ($("b-guardar").disabled = false); }
+}
+async function eliminar(m){
+  if (!confirm(`¿Eliminar la ficha de ${m.nombre} y todo su historial? Esta acción no se puede deshacer.`)) return;
+  const { error } = await sb.from("mascotas").delete().eq("id", m.id);
+  if (error) return toast("No se pudo eliminar: " + error.message, true);
+  if (m.foto_url) borrarFoto(m.foto_url).catch(() => {});
+  log("Eliminó mascota", "mascotas", m.nombre); selId = null; await cargarMascotas(); toast("Mascota eliminada.");
+}
 
-$("btn-eliminar").addEventListener("click", async () => {
-  const m = mascotas.find(x => x.id === seleccionId);
-  if (!m || !confirm(`¿Eliminar la ficha de ${m.nombre}? Esta acción no se puede deshacer.`)) return;
-  try {
-    await api.eliminar(seleccionId);
-    if (m.foto_url) api.borrarFoto(m.foto_url).catch(() => {});
-    mascotas = await api.listar();
-    seleccionId = null; mostrarForm(false); aplicarModo("vista"); pintarLista();
-    toast("Mascota eliminada.");
-  } catch (err) {
-    console.error(err);
-    toast("No se pudo eliminar: " + (err.message || "error desconocido"), true);
-  }
-});
+/* ---------- Historial clínico ---------- */
+async function pintarClin(t){
+  const cfg = CLIN[t], cu = $("cuerpo"), hoyS = hoy(); cu.innerHTML = `<p class="vacio">Cargando…</p>`;
+  const { data, error } = await sb.from(t).select("*").eq("mascota_id", selId).order(cfg.o, {ascending: false});
+  if (tab !== t) return;
+  if (error) return cu.innerHTML = `<p class="vacio">No se pudo cargar: ${esc(error.message)}</p>`;
+  const celda = (k, v) => k === "proxima_dosis" || k === "fecha" || k.startsWith("fecha_") ? (k === "proxima_dosis" && v && v < hoyS ? `<span class="venc">${fecha(v)} · vencida</span>` : fecha(v)) : esc(v ?? "—");
+  cu.innerHTML = `<div class="tabla"><table><thead><tr>${cfg.c.map(c => `<th>${c[1]}</th>`).join("")}<th></th></tr></thead><tbody>
+    ${data.map(r => `<tr>${cfg.c.map(([k]) => `<td>${celda(k, r[k])}</td>`).join("")}<td><button class="btn pel" data-del="${r.id}" aria-label="Eliminar registro">Quitar</button></td></tr>`).join("") || `<tr><td colspan="${cfg.c.length + 1}">Sin registros todavía.</td></tr>`}</tbody></table></div>
+    <details><summary class="btn pri">Agregar registro</summary><form id="fa" class="grid">${cfg.c.map(([k,l,ty,req]) => `<div><label for="a-${k}">${l}${req ? " *" : ""}</label><input id="a-${k}" name="${k}" type="${ty}" ${req ? "required" : ""} ${ty === "number" ? 'step="0.01"' : ""}></div>`).join("")}<div class="full"><button class="btn pri">Guardar registro</button></div></form></details>`;
+  cu.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
+    if (!confirm("¿Quitar este registro?")) return;
+    const { error } = await sb.from(t).delete().eq("id", b.dataset.del);
+    if (error) return toast(error.message, true);
+    log("Quitó registro", t, mascotas.find(x => x.id === selId)?.nombre); pintarClin(t);
+  });
+  $("fa").onsubmit = async e => {
+    e.preventDefault(); const fila = {mascota_id: selId};
+    cfg.c.forEach(([k,,ty]) => { const v = $("fa").elements[k].value.trim(); fila[k] = v === "" ? null : ty === "number" ? Number(v) : v; });
+    const { error } = await sb.from(t).insert(fila);
+    if (error) return toast("No se pudo guardar: " + error.message, true);
+    log("Agregó registro", t, mascotas.find(x => x.id === selId)?.nombre); toast("Registro guardado."); pintarClin(t);
+  };
+}
+
+/* ---------- Administración: usuarios ---------- */
+async function vistaUsuarios(){
+  const { data, error } = await sb.from("perfiles").select("*").order("creado_en");
+  if (error) return $("app").innerHTML = `<div class="panel pad">No se pudo cargar: ${esc(error.message)}</div>`;
+  $("app").innerHTML = `<div class="panel pad"><h2>Usuarios</h2><div class="tabla"><table><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Acceso</th><th></th></tr></thead><tbody>
+    ${data.map(u => { const yo = u.id === perfil.id; return `<tr><td>${esc(u.nombre)}</td><td>${esc(u.email)}</td>
+    <td><select data-rol="${u.id}" aria-label="Rol de ${esc(u.nombre)}" ${yo ? "disabled" : ""}><option value="${ROL_VET}" ${u.rol === ROL_VET ? "selected" : ""}>Veterinario</option><option value="${ROL_ADMIN}" ${u.rol === ROL_ADMIN ? "selected" : ""}>Administrador</option></select></td>
+    <td><button class="btn ${u.activo ? "" : "pel"}" data-act="${u.id}" ${yo ? "disabled" : ""}>${u.activo ? "Habilitado · Bloquear" : "Bloqueado · Habilitar"}</button></td>
+    <td><button class="btn pel" data-del="${u.id}" ${yo ? "disabled" : ""}>Eliminar</button></td></tr>`; }).join("")}</tbody></table></div>
+    <h3>Crear usuario</h3><form id="fu" class="grid" style="margin-top:12px"><div><label for="u-n">Nombre</label><input id="u-n" required></div><div><label for="u-e">Correo</label><input id="u-e" type="email" required></div>
+    <div><label for="u-p">Contraseña (mín. 6)</label><input id="u-p" type="password" minlength="6" required autocomplete="new-password"></div>
+    <div><label for="u-r">Rol</label><select id="u-r"><option value="${ROL_VET}">Veterinario</option><option value="${ROL_ADMIN}">Administrador</option></select></div>
+    <div class="full"><button class="btn pri">Crear usuario</button></div></form></div>`;
+  const por = id => data.find(u => u.id === id);
+  document.querySelectorAll("[data-rol]").forEach(s => s.onchange = async () => {
+    const { error } = await sb.from("perfiles").update({rol: s.value}).eq("id", s.dataset.rol);
+    error ? toast(error.message, true) : (log("Cambió rol", "perfiles", por(s.dataset.rol).email + " → " + s.value), toast("Rol actualizado."));
+  });
+  document.querySelectorAll("[data-act]").forEach(b => b.onclick = async () => {
+    const u = por(b.dataset.act), { error } = await sb.from("perfiles").update({activo: !u.activo}).eq("id", u.id);
+    if (error) return toast(error.message, true);
+    log(u.activo ? "Bloqueó usuario" : "Habilitó usuario", "perfiles", u.email); vistaUsuarios();
+  });
+  document.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
+    const u = por(b.dataset.del); if (!confirm(`¿Eliminar el perfil de ${u.nombre}? Perderá todo acceso.`)) return;
+    const { error } = await sb.from("perfiles").delete().eq("id", u.id);
+    if (error) return toast(error.message, true);
+    log("Eliminó usuario", "perfiles", u.email); vistaUsuarios();
+  });
+  $("fu").onsubmit = async e => {
+    e.preventDefault(); const email = $("u-e").value.trim(), nombre = $("u-n").value.trim(), rol = $("u-r").value;
+    // cliente temporal: no pisa la sesión del administrador
+    const tmp = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {auth: {persistSession: false, autoRefreshToken: false, detectSessionInUrl: false}});
+    const { data: r, error } = await tmp.auth.signUp({email, password: $("u-p").value, options: {data: {nombre}}});
+    if (error || !r.user) return toast("No se pudo crear: " + (error?.message || "intenta de nuevo"), true);
+    const { error: e2 } = await sb.from("perfiles").upsert({id: r.user.id, email, nombre, rol, activo: true});
+    if (e2) return toast("Usuario creado, pero falló el perfil: " + e2.message, true);
+    log("Creó usuario", "perfiles", email + " (" + rol + ")"); toast("Usuario creado."); vistaUsuarios();
+  };
+}
+
+/* ---------- Administración: actividad ---------- */
+async function vistaActividad(){
+  const { data, error } = await sb.from("registro_actividad").select("*").order("creado_en", {ascending: false}).limit(200);
+  if (error) return $("app").innerHTML = `<div class="panel pad">No se pudo cargar: ${esc(error.message)}</div>`;
+  $("app").innerHTML = `<div class="panel pad"><div class="fila" style="justify-content:space-between;margin-bottom:10px"><h2>Registro de actividad</h2><button class="btn" id="b-rec">Actualizar</button></div>
+    <div class="tabla"><table><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Sección</th><th>Detalle</th></tr></thead><tbody>
+    ${data.map(r => `<tr><td>${new Date(r.creado_en).toLocaleString("es-EC")}</td><td>${esc(r.usuario_email)}</td><td>${esc(r.accion)}</td><td>${esc(r.entidad)}</td><td>${esc(r.detalle)}</td></tr>`).join("") || `<tr><td colspan="5">Sin actividad registrada.</td></tr>`}</tbody></table></div></div>`;
+  $("b-rec").onclick = vistaActividad;
+}
 
 /* ---------- Inicio ---------- */
 (async function init(){
-  try { mascotas = await api.listar(); }
-  catch (err) { console.error(err); toast("No se pudo cargar la lista: " + (err.message||""), true); }
-  pintarLista();
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) await cargarPerfil(session.user);
+  render();
 })();
 </script>
 </body>
