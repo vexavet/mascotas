@@ -7,7 +7,7 @@
 <title>VEXAVET | Carnet Digital</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Figtree:wght@400;500;600&family=Montserrat:wght@800&family=Zilla+Slab:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{color-scheme:light;--fondo:#ffae00;--panel:#fff;--tinta:#1c1236;--suave:#5f5675;--linea:#eadfc0;--pri:#4318e5;--pri2:#3310b8;--acento:#ff1a5e;--aviso:#ffae00;--peligro:#d90f4f;--ro:#fcf7e8;--r:10px}
 *{box-sizing:border-box}
@@ -71,6 +71,17 @@ dialog::backdrop{background:rgba(0,0,0,.45)}dialog form{display:grid;gap:12px}
 .err{color:var(--peligro);font-size:.9rem;min-height:1.2em}
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--tinta);color:var(--panel);padding:11px 18px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:10}
 #toast.ver{opacity:1}#toast.error{background:var(--peligro);color:#fff}
+.portada{position:relative;display:grid;grid-template-columns:1.1fr .9fr;align-items:center;gap:8px;min-height:560px;padding:60px 8px 56px;overflow:hidden}
+.portada h1{font:800 clamp(2.8rem,8.4vw,6rem)/.92 Montserrat,"Bricolage Grotesque",sans-serif;letter-spacing:-.035em;margin:0}
+.portada h1 span{display:block}.t1{color:#fff}.t2{color:var(--acento)}.t3{color:var(--pri)}
+.portada .sub{font:400 clamp(1.1rem,2.4vw,1.5rem)/1.4 "Zilla Slab",Georgia,serif;margin:26px 0 22px;max-width:28ch}
+.portada .nota{font-size:.88rem;max-width:46ch;margin:16px 0 0}
+.portada .texto{position:relative;z-index:1}
+.btn.grande{min-height:50px;padding:0 30px;font-size:1.05rem}
+.portada-art{width:100%;height:auto;max-height:560px}
+.pt{position:absolute;left:0;top:0;width:min(250px,42vw);pointer-events:none}
+.onda{position:absolute;left:8px;bottom:10px;width:210px}
+@media (max-width:820px){.portada{grid-template-columns:1fr;padding-top:90px}.portada-art{max-width:400px;margin:8px auto 0}.onda{display:none}}
 @media (max-width:820px){.layout{grid-template-columns:1fr}#lista{max-height:220px}}
 @media (max-width:520px){.grid{grid-template-columns:1fr}.det{padding:14px}.avatar{width:72px;height:72px}}
 @media (prefers-reduced-motion:reduce){#toast{transition:none}}
@@ -241,9 +252,30 @@ function render(){
   if (publicId && perfil && !forzarPublico){ selId = publicId; publicId = null; history.replaceState(null, "", location.pathname); tab = "datos"; vista = "mascotas"; }
   pintarCabecera();
   if (publicId) return pintarPublico();
-  if (!perfil) return $("app").innerHTML = `<div class="panel pad"><h2>Acceso del personal</h2><p>Inicia sesión como veterinario o administrador para ver el listado de pacientes. Los perfiles individuales se comparten con un enlace público.</p></div>`;
+  if (!perfil) return pintarPortada();
   if (vista !== "mascotas" && !isAdmin()) vista = "mascotas";
   ({mascotas: vistaMascotas, usuarios: vistaUsuarios, actividad: vistaActividad})[vista]();
+}
+
+/* ---------- Portada ---------- */
+const PORTADA_ARTE = `<svg class="portada-art" viewBox="0 0 520 570" role="img" aria-label="Ilustración de una huella de mascota">
+<polygon points="150.0,6.0 157.4,39.2 182.9,16.7 169.4,47.9 203.3,44.7 174.0,62.0 203.3,79.3 169.4,76.1 182.9,107.3 157.4,84.8 150.0,118.0 142.6,84.8 117.1,107.3 130.6,76.1 96.7,79.3 126.0,62.0 96.7,44.7 130.6,47.9 117.1,16.7 142.6,39.2" fill="#4318e5"/>
+<circle cx="300" cy="250" r="200" fill="#fcf7e8"/>
+<g fill="#4318e5"><path d="M300 262c-48 0-84 32-84 66 0 30 26 42 53 38 13-2 21-6 31-6s18 4 31 6c27 4 53-8 53-38 0-34-36-66-84-66z"/>
+<ellipse cx="222" cy="232" rx="23" ry="34" transform="rotate(-24 222 232)"/><ellipse cx="268" cy="182" rx="23" ry="36" transform="rotate(-8 268 182)"/>
+<ellipse cx="332" cy="182" rx="23" ry="36" transform="rotate(8 332 182)"/><ellipse cx="378" cy="232" rx="23" ry="34" transform="rotate(24 378 232)"/></g>
+<path d="M300 462h80a60 45 0 0 1 60 45v45H300z" fill="#4318e5"/><path d="M322 552c8-44 52-58 92-34M390 552c0-24 14-38 34-44" fill="none" stroke="#fff" stroke-width="1.6"/>
+<rect x="190" y="455" width="110" height="100" fill="#fcf7e8"/><g fill="#ff1a5e"><rect x="205" y="468" width="24" height="7" rx="3.5" transform="rotate(-30 217 471.5)"/><rect x="235" y="462" width="24" height="7" rx="3.5" transform="rotate(60 247 465.5)"/><rect x="262" y="478" width="24" height="7" rx="3.5" transform="rotate(30 274 481.5)"/><rect x="210" y="500" width="24" height="7" rx="3.5" transform="rotate(20 222 503.5)"/><rect x="240" y="495" width="24" height="7" rx="3.5" transform="rotate(-60 252 498.5)"/><rect x="268" y="508" width="24" height="7" rx="3.5" transform="rotate(-20 280 511.5)"/><rect x="222" y="528" width="24" height="7" rx="3.5" transform="rotate(45 234 531.5)"/></g>
+<path d="M152 478a38 38 0 0 1 0 76z" fill="#fff"/><circle cx="112" cy="516" r="34" fill="#ff1a5e"/>
+<path d="M44 392q4 20 20 25q-16 4-20 25q-4-21-20-25q16-5 20-25z" fill="#4318e5"/></svg>`, PORTADA_PUNTOS = `<svg class="pt" viewBox="0 0 260 200" aria-hidden="true"><g fill="#fff"><circle cx="-2" cy="5" r="4.0"/><circle cx="19" cy="5" r="3.8"/><circle cx="47" cy="10" r="3.4"/><circle cx="64" cy="8" r="3.3"/><circle cx="85" cy="5" r="3.2"/><circle cx="113" cy="11" r="2.8"/><circle cx="134" cy="6" r="2.7"/><circle cx="155" cy="10" r="2.5"/><circle cx="179" cy="5" r="2.3"/><circle cx="220" cy="5" r="1.9"/><circle cx="14" cy="29" r="3.5"/><circle cx="36" cy="28" r="3.3"/><circle cx="56" cy="27" r="3.2"/><circle cx="95" cy="29" r="2.8"/><circle cx="121" cy="28" r="2.5"/><circle cx="147" cy="26" r="2.3"/><circle cx="163" cy="29" r="2.2"/><circle cx="186" cy="30" r="1.9"/><circle cx="227" cy="26" r="1.6"/><circle cx="24" cy="51" r="3.2"/><circle cx="64" cy="52" r="2.8"/><circle cx="87" cy="52" r="2.6"/><circle cx="132" cy="45" r="2.2"/><circle cx="172" cy="45" r="1.9"/><circle cx="33" cy="66" r="2.9"/><circle cx="52" cy="68" r="2.7"/><circle cx="76" cy="72" r="2.4"/><circle cx="120" cy="66" r="2.1"/><circle cx="205" cy="71" r="1.6"/><circle cx="2" cy="90" r="2.9"/><circle cx="19" cy="86" r="2.8"/><circle cx="47" cy="91" r="2.5"/><circle cx="67" cy="90" r="2.3"/><circle cx="91" cy="88" r="2.1"/><circle cx="111" cy="86" r="1.9"/><circle cx="136" cy="85" r="1.7"/><circle cx="179" cy="85" r="1.6"/><circle cx="36" cy="104" r="2.4"/><circle cx="52" cy="110" r="2.2"/><circle cx="80" cy="108" r="2.0"/><circle cx="97" cy="109" r="1.8"/><circle cx="124" cy="110" r="1.6"/><circle cx="3" cy="125" r="2.5"/><circle cx="21" cy="130" r="2.2"/><circle cx="42" cy="128" r="2.1"/><circle cx="63" cy="125" r="1.9"/><circle cx="91" cy="128" r="1.6"/><circle cx="31" cy="148" r="1.9"/><circle cx="101" cy="152" r="1.6"/><circle cx="47" cy="167" r="1.6"/><circle cx="12" cy="192" r="1.6"/><circle cx="37" cy="185" r="1.6"/></g></svg>`, PORTADA_ONDA = `<svg class="onda" viewBox="0 0 250 40" aria-hidden="true"><circle cx="16" cy="20" r="14" fill="#fff"/><path d="M56 22c20-26 40-26 60 0s40 26 60 0 30-18 44-10" fill="none" stroke="#ff1a5e" stroke-width="4" stroke-linecap="round"/></svg>`;
+function pintarPortada(){
+  $("app").innerHTML = `<section class="portada" aria-labelledby="t-portada">${PORTADA_PUNTOS}
+    <div class="texto"><h1 id="t-portada"><span class="t1">Carnet</span><span class="t2">Veterinario</span><span class="t3">Digital</span></h1>
+    <p class="sub">El historial clínico de cada mascota, siempre a la mano.</p>
+    <button class="btn pri grande" id="b-login2">Iniciar sesión</button>
+    <p class="nota">Acceso para veterinarios y administradores. Los perfiles de las mascotas se comparten con un enlace público.</p></div>
+    ${PORTADA_ARTE}${PORTADA_ONDA}</section>`;
+  $("b-login2").onclick = () => $("dlg").showModal();
 }
 
 /* ---------- Perfil público ---------- */
