@@ -81,11 +81,26 @@ dialog::backdrop{background:rgba(0,0,0,.45)}dialog form{display:grid;gap:12px}
 <dialog id="dlg">
   <form id="fl">
     <h2>Iniciar sesión</h2>
-    <div><label for="l-mail">Correo</label><input id="l-mail" type="email" autocomplete="username" required></div>
+    <div><label for="l-mail">Usuario</label><input id="l-mail" autocomplete="username" autocapitalize="none" required></div>
     <div><label for="l-pass">Contraseña</label><input id="l-pass" type="password" autocomplete="current-password" required></div>
     <div class="err" id="l-err" role="alert"></div>
     <div class="fila"><button class="btn pri" id="l-ok">Entrar</button><button type="button" class="btn" id="l-x">Cancelar</button></div>
   </form>
+</dialog>
+<dialog id="dlg-cuenta">
+  <h2>Mi cuenta</h2>
+  <form id="fc-n" style="margin-top:12px">
+    <div><label for="c-user">Usuario (no se puede cambiar)</label><input id="c-user" disabled></div>
+    <div><label for="c-nombre">Nombre</label><input id="c-nombre" required></div>
+    <button class="btn pri">Guardar nombre</button>
+  </form>
+  <form id="fc-p" style="margin-top:18px;border-top:1px solid var(--linea);padding-top:16px">
+    <h3>Cambiar contraseña</h3>
+    <div><label for="c-act">Contraseña actual</label><input id="c-act" type="password" autocomplete="current-password" required></div>
+    <div><label for="c-new">Nueva contraseña (mín. 6)</label><input id="c-new" type="password" minlength="6" autocomplete="new-password" required></div>
+    <button class="btn pri">Cambiar contraseña</button>
+  </form>
+  <div class="fila" style="margin-top:16px"><button type="button" class="btn" id="c-x">Cerrar</button></div>
 </dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
@@ -133,7 +148,7 @@ function toast(msg, error = false){
 }
 async function log(accion, entidad, detalle){
   if (!perfil) return;
-  await sb.from("registro_actividad").insert({usuario_id: perfil.id, usuario_email: perfil.email, accion, entidad: entidad || null, detalle: detalle || null});
+  await sb.from("registro_actividad").insert({usuario_id: perfil.id, usuario_email: perfil.usuario || perfil.email, accion, entidad: entidad || null, detalle: detalle || null});
 }
 const avatarHTML = (url, nombre) => url ? `<img src="${esc(url)}" alt="Foto de ${esc(nombre)}">` : esc((nombre || "?")[0].toUpperCase());
 const edad = f => { if (!f) return "—"; const d = new Date(f), n = new Date(); let m = (n.getFullYear() - d.getFullYear()) * 12 + n.getMonth() - d.getMonth(); if (n.getDate() < d.getDate()) m--; return m >= 12 ? Math.floor(m / 12) + " años" + (m % 12 ? " " + (m % 12) + " m" : "") : m + " meses"; };
@@ -146,20 +161,40 @@ async function cargarPerfil(u){
 }
 $("fl").addEventListener("submit", async e => {
   e.preventDefault(); $("l-err").textContent = ""; $("l-ok").disabled = true;
-  const { data, error } = await sb.auth.signInWithPassword({email: $("l-mail").value.trim(), password: $("l-pass").value});
-  if (error){ $("l-err").textContent = "Correo o contraseña incorrectos."; $("l-ok").disabled = false; return; }
+  const { data: email } = await sb.rpc("email_por_usuario", {p_usuario: $("l-mail").value});
+  const { data, error } = email ? await sb.auth.signInWithPassword({email, password: $("l-pass").value}) : {error: true};
+  if (error){ $("l-err").textContent = "Usuario o contraseña incorrectos."; $("l-ok").disabled = false; return; }
   const r = await cargarPerfil(data.user); $("l-ok").disabled = false;
   if (r){ $("l-err").textContent = r === "bloqueado" ? "Tu acceso está bloqueado o pendiente de aprobación. Contacta al administrador." : "Tu cuenta no tiene perfil asignado. Contacta al administrador."; return; }
   $("dlg").close(); $("fl").reset(); await log("Inició sesión"); vista = "mascotas"; render();
 });
 $("l-x").onclick = () => $("dlg").close();
 
+/* ---------- Mi cuenta ---------- */
+$("c-x").onclick = () => $("dlg-cuenta").close();
+$("fc-n").addEventListener("submit", async e => {
+  e.preventDefault(); const n = $("c-nombre").value.trim(); if (!n) return;
+  const { error } = await sb.rpc("actualizar_mi_nombre", {p_nombre: n});
+  if (error) return toast("No se pudo guardar: " + error.message, true);
+  perfil.nombre = n; pintarCabecera(); log("Cambió su nombre", "perfiles", n); toast("Nombre actualizado.");
+});
+$("fc-p").addEventListener("submit", async e => {
+  e.preventDefault();
+  const { data: { user } } = await sb.auth.getUser();
+  const chk = await sb.auth.signInWithPassword({email: user.email, password: $("c-act").value});
+  if (chk.error) return toast("La contraseña actual no es correcta.", true);
+  const { error } = await sb.auth.updateUser({password: $("c-new").value});
+  if (error) return toast("No se pudo cambiar: " + error.message, true);
+  $("fc-p").reset(); log("Cambió su contraseña", "perfiles"); toast("Contraseña actualizada.");
+});
+
 /* ---------- Estructura ---------- */
 function pintarCabecera(){
   $("sesion").innerHTML = perfil
-    ? `<span class="chip">${esc(perfil.nombre)} · ${esc(perfil.rol)}</span><button class="btn" id="b-salir">Salir</button>`
+    ? `<span class="chip">${esc(perfil.nombre)} · ${esc(perfil.rol)}</span><button class="btn" id="b-cuenta">Mi cuenta</button><button class="btn" id="b-salir">Salir</button>`
     : `<button class="btn pri" id="b-login">Iniciar sesión</button>`;
   if ($("b-login")) $("b-login").onclick = () => $("dlg").showModal();
+  if ($("b-cuenta")) $("b-cuenta").onclick = () => { $("c-user").value = perfil.usuario || ""; $("c-nombre").value = perfil.nombre; $("dlg-cuenta").showModal(); };
   if ($("b-salir")) $("b-salir").onclick = async () => { await log("Cerró sesión"); await sb.auth.signOut(); perfil = null; selId = null; render(); };
   const secs = [["mascotas","Mascotas"], ...(isAdmin() ? [["usuarios","Usuarios"],["actividad","Actividad"]] : [])];
   $("nav").innerHTML = !perfil ? "" : publicId ? `<a class="btn" href="${location.pathname}">Ir al panel</a>`
@@ -319,43 +354,49 @@ async function pintarClin(t){
 }
 
 /* ---------- Administración: usuarios ---------- */
+async function llamarAdmin(body){
+  const { data, error } = await sb.functions.invoke("admin-usuarios", {body});
+  if (error){ let m = error.message; try { m = (await error.context.json()).error || m; } catch {} throw new Error(m); }
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+async function cambiarPerfil(id, cambios){
+  const { data, error } = await sb.from("perfiles").update(cambios).eq("id", id).select();
+  if (error) throw error;
+  if (!data.length) throw new Error("No se aplicó el cambio. Verifica que seas administrador y que existan las políticas de perfiles.");
+}
 async function vistaUsuarios(){
   const { data, error } = await sb.from("perfiles").select("*").order("creado_en");
   if (error) return $("app").innerHTML = `<div class="panel pad">No se pudo cargar: ${esc(error.message)}</div>`;
-  $("app").innerHTML = `<div class="panel pad"><h2>Usuarios</h2><div class="tabla"><table><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Acceso</th><th></th></tr></thead><tbody>
-    ${data.map(u => { const yo = u.id === perfil.id; return `<tr><td>${esc(u.nombre)}</td><td>${esc(u.email)}</td>
+  $("app").innerHTML = `<div class="panel pad"><h2>Usuarios</h2><div class="tabla"><table><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Acceso</th><th>Acciones</th></tr></thead><tbody>
+    ${data.map(u => { const yo = u.id === perfil.id; return `<tr><td>${esc(u.nombre)}</td><td>${esc(u.usuario || "—")}</td>
     <td><select data-rol="${u.id}" aria-label="Rol de ${esc(u.nombre)}" ${yo ? "disabled" : ""}><option value="${ROL_VET}" ${u.rol === ROL_VET ? "selected" : ""}>Veterinario</option><option value="${ROL_ADMIN}" ${u.rol === ROL_ADMIN ? "selected" : ""}>Administrador</option></select></td>
     <td><button class="btn ${u.activo ? "" : "pel"}" data-act="${u.id}" ${yo ? "disabled" : ""}>${u.activo ? "Habilitado · Bloquear" : "Bloqueado · Habilitar"}</button></td>
-    <td><button class="btn pel" data-del="${u.id}" ${yo ? "disabled" : ""}>Eliminar</button></td></tr>`; }).join("")}</tbody></table></div>
-    <h3>Crear usuario</h3><form id="fu" class="grid" style="margin-top:12px"><div><label for="u-n">Nombre</label><input id="u-n" required></div><div><label for="u-e">Correo</label><input id="u-e" type="email" required></div>
+    <td><div class="fila"><button class="btn" data-clave="${u.id}">Restablecer clave</button><button class="btn pel" data-del="${u.id}" ${yo ? "disabled" : ""}>Eliminar</button></div></td></tr>`; }).join("")}</tbody></table></div>
+    <h3>Crear usuario</h3><form id="fu" class="grid" style="margin-top:12px"><div><label for="u-u">Usuario (para iniciar sesión)</label><input id="u-u" required pattern="[a-zA-Z0-9._-]{3,30}" autocapitalize="none"></div><div><label for="u-n">Nombre</label><input id="u-n" required></div>
     <div><label for="u-p">Contraseña (mín. 6)</label><input id="u-p" type="password" minlength="6" required autocomplete="new-password"></div>
     <div><label for="u-r">Rol</label><select id="u-r"><option value="${ROL_VET}">Veterinario</option><option value="${ROL_ADMIN}">Administrador</option></select></div>
     <div class="full"><button class="btn pri">Crear usuario</button></div></form></div>`;
-  const por = id => data.find(u => u.id === id);
-  document.querySelectorAll("[data-rol]").forEach(s => s.onchange = async () => {
-    const { error } = await sb.from("perfiles").update({rol: s.value}).eq("id", s.dataset.rol);
-    error ? toast(error.message, true) : (log("Cambió rol", "perfiles", por(s.dataset.rol).email + " → " + s.value), toast("Rol actualizado."));
+  const por = id => data.find(u => u.id === id), id = n => n.dataset;
+  const intentar = async (f, ok) => { try { await f(); toast(ok); vistaUsuarios(); } catch (err) { toast(err.message, true); vistaUsuarios(); } };
+  document.querySelectorAll("[data-rol]").forEach(x => x.onchange = () => intentar(async () => {
+    await cambiarPerfil(x.dataset.rol, {rol: x.value}); log("Cambió rol", "perfiles", por(x.dataset.rol).usuario + " → " + x.value);
+  }, "Rol actualizado."));
+  document.querySelectorAll("[data-act]").forEach(x => x.onclick = () => intentar(async () => {
+    const u = por(x.dataset.act); await cambiarPerfil(u.id, {activo: !u.activo}); log(u.activo ? "Bloqueó usuario" : "Habilitó usuario", "perfiles", u.usuario);
+  }, "Acceso actualizado."));
+  document.querySelectorAll("[data-clave]").forEach(x => x.onclick = () => {
+    const u = por(x.dataset.clave), p = prompt(`Nueva contraseña para ${u.usuario || u.nombre} (mín. 6 caracteres):`);
+    if (!p) return;
+    intentar(async () => { await llamarAdmin({accion: "clave", id: u.id, password: p}); log("Restableció contraseña", "perfiles", u.usuario); }, "Contraseña restablecida.");
   });
-  document.querySelectorAll("[data-act]").forEach(b => b.onclick = async () => {
-    const u = por(b.dataset.act), { error } = await sb.from("perfiles").update({activo: !u.activo}).eq("id", u.id);
-    if (error) return toast(error.message, true);
-    log(u.activo ? "Bloqueó usuario" : "Habilitó usuario", "perfiles", u.email); vistaUsuarios();
+  document.querySelectorAll("[data-del]").forEach(x => x.onclick = () => {
+    const u = por(x.dataset.del); if (!confirm(`¿Eliminar definitivamente a ${u.nombre} (${u.usuario})?`)) return;
+    intentar(async () => { await llamarAdmin({accion: "eliminar", id: u.id}); log("Eliminó usuario", "perfiles", u.usuario); }, "Usuario eliminado.");
   });
-  document.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
-    const u = por(b.dataset.del); if (!confirm(`¿Eliminar el perfil de ${u.nombre}? Perderá todo acceso.`)) return;
-    const { error } = await sb.from("perfiles").delete().eq("id", u.id);
-    if (error) return toast(error.message, true);
-    log("Eliminó usuario", "perfiles", u.email); vistaUsuarios();
-  });
-  $("fu").onsubmit = async e => {
-    e.preventDefault(); const email = $("u-e").value.trim(), nombre = $("u-n").value.trim(), rol = $("u-r").value;
-    // cliente temporal: no pisa la sesión del administrador
-    const tmp = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {auth: {persistSession: false, autoRefreshToken: false, detectSessionInUrl: false}});
-    const { data: r, error } = await tmp.auth.signUp({email, password: $("u-p").value, options: {data: {nombre}}});
-    if (error || !r.user) return toast("No se pudo crear: " + (error?.message || "intenta de nuevo"), true);
-    const { error: e2 } = await sb.from("perfiles").upsert({id: r.user.id, email, nombre, rol, activo: true});
-    if (e2) return toast("Usuario creado, pero falló el perfil: " + e2.message, true);
-    log("Creó usuario", "perfiles", email + " (" + rol + ")"); toast("Usuario creado."); vistaUsuarios();
+  $("fu").onsubmit = e => {
+    e.preventDefault(); const usuario = $("u-u").value.trim().toLowerCase(), rol = $("u-r").value;
+    intentar(async () => { await llamarAdmin({accion: "crear", usuario, nombre: $("u-n").value.trim(), password: $("u-p").value, rol}); log("Creó usuario", "perfiles", usuario + " (" + rol + ")"); }, "Usuario creado.");
   };
 }
 
