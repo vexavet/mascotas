@@ -11,6 +11,7 @@
 <style>
 :root{color-scheme:light;--fondo:#ffae00;--panel:#fff;--tinta:#1c1236;--suave:#5f5675;--linea:#eadfc0;--pri:#4318e5;--pri2:#3310b8;--acento:#ff1a5e;--aviso:#ffae00;--peligro:#d90f4f;--ro:#fcf7e8;--r:10px}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--fondo);color:var(--tinta);font:400 16px/1.5 Figtree,system-ui,sans-serif}
 h1,h2,h3{font-family:"Bricolage Grotesque",Figtree,sans-serif;margin:0;letter-spacing:-.01em}
 .app{max-width:1120px;margin:0 auto;padding:16px 16px 40px}
@@ -108,6 +109,17 @@ dialog::backdrop{background:rgba(0,0,0,.45)}dialog form{display:grid;gap:12px}
     <div><label for="l-pass">Contraseña</label><input id="l-pass" type="password" autocomplete="current-password" required></div>
     <div class="err" id="l-err" role="alert"></div>
     <div class="fila"><button class="btn pri" id="l-ok">Entrar</button><button type="button" class="btn" id="l-x">Cancelar</button></div>
+  </form>
+</dialog>
+<dialog id="dlg-editar">
+  <form id="fe">
+    <h2>Editar usuario</h2>
+    <div><label for="e-u">Usuario</label><input id="e-u" required pattern="[a-zA-Z0-9._-]{3,30}" autocapitalize="none"></div>
+    <div><label for="e-n">Nombre</label><input id="e-n" required></div>
+    <div><label for="e-r">Rol</label><select id="e-r"></select></div>
+    <div><label for="e-p">Nueva contraseña (opcional)</label><input id="e-p" type="password" minlength="6" autocomplete="new-password"></div>
+    <p class="chip" style="margin:0">Las contraseñas actuales no se pueden consultar porque se guardan cifradas. Si el usuario la olvidó, escribe una nueva aquí.</p>
+    <div class="fila"><button class="btn pri">Guardar cambios</button><button type="button" class="btn" id="e-x">Cancelar</button></div>
   </form>
 </dialog>
 <dialog id="dlg-cuenta">
@@ -214,7 +226,7 @@ function ojos(root = document){
 function ocultarClaves(root){ root.querySelectorAll("input[data-ojo]").forEach(i => { i.type = "password"; i.nextElementSibling.innerHTML = OJO_ABIERTO; i.nextElementSibling.setAttribute("aria-pressed", "false"); }); }
 ojos();
 new MutationObserver(() => ojos($("app"))).observe($("app"), {childList: true, subtree: true});
-["dlg", "dlg-cuenta"].forEach(id => $(id).addEventListener("close", () => ocultarClaves($(id))));
+["dlg", "dlg-cuenta", "dlg-editar"].forEach(id => $(id).addEventListener("close", () => ocultarClaves($(id))));
 
 /* ---------- Mi cuenta ---------- */
 $("c-x").onclick = () => $("dlg-cuenta").close();
@@ -443,35 +455,57 @@ async function cambiarPerfil(id, cambios){
 async function vistaUsuarios(){
   const { data, error } = await sb.from("perfiles").select("*").order("creado_en");
   if (error) return $("app").innerHTML = `<div class="panel pad">No se pudo cargar: ${esc(error.message)}</div>`;
-  $("app").innerHTML = `<div class="panel pad"><h2>Usuarios</h2><div class="tabla"><table><thead><tr><th>Estado</th><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Acceso</th><th>Acciones</th></tr></thead><tbody>
-    ${data.map(u => { const yo = u.id === perfil.id; return `<tr><td class="estado"><span class="punto ${u.activo ? "on" : "off"}" aria-hidden="true"></span>${u.activo ? "Habilitado" : "Bloqueado"}</td><td>${esc(u.nombre)}</td><td>${esc(u.usuario || "—")}</td>
-    <td><select data-rol="${u.id}" aria-label="Rol de ${esc(u.nombre)}" ${yo ? "disabled" : ""}><option value="${ROL_VET}" ${u.rol === ROL_VET ? "selected" : ""}>Veterinario</option><option value="${ROL_ADMIN}" ${u.rol === ROL_ADMIN ? "selected" : ""}>Administrador</option></select></td>
+  const etiqueta = r => r === ROL_ADMIN ? "Administrador" : "Veterinario";
+  const opciones = `<option value="${ROL_VET}">Veterinario</option><option value="${ROL_ADMIN}">Administrador</option>`;
+  let uEdit = null;
+  $("app").innerHTML = `<div class="panel pad"><div class="fila" style="justify-content:space-between;margin-bottom:14px"><h2>Usuarios</h2>
+    <div class="fila"><button class="btn pri" id="b-agregar">Agregar usuario</button><button class="btn" id="b-cancelar-u" disabled>Cancelar</button></div></div>
+    <form id="fu" class="grid" hidden style="margin-bottom:18px;padding:16px;background:var(--ro);border-radius:var(--r)">
+      <div><label for="u-u">Usuario (para iniciar sesión)</label><input id="u-u" required pattern="[a-zA-Z0-9._-]{3,30}" autocapitalize="none"></div><div><label for="u-n">Nombre</label><input id="u-n" required></div>
+      <div><label for="u-p">Contraseña (mín. 6)</label><input id="u-p" type="password" minlength="6" required autocomplete="new-password"></div>
+      <div><label for="u-r">Rol</label><select id="u-r">${opciones}</select></div>
+      <div class="full"><button class="btn pri">Crear usuario</button></div></form>
+    <div class="tabla"><table><thead><tr><th>Estado</th><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Acceso</th><th>Acciones</th></tr></thead><tbody>
+    ${data.map(u => { const yo = u.id === perfil.id; return `<tr><td class="estado"><span class="punto ${u.activo ? "on" : "off"}" aria-hidden="true"></span>${u.activo ? "Habilitado" : "Bloqueado"}</td><td>${esc(u.nombre)}</td><td>${esc(u.usuario || "—")}</td><td>${etiqueta(u.rol)}</td>
     <td><button class="btn ${u.activo ? "rojo" : "verde"}" data-act="${u.id}" ${yo ? "disabled" : ""}>${u.activo ? "Bloquear" : "Habilitar"}</button></td>
-    <td><div class="fila"><button class="btn" data-clave="${u.id}">Restablecer clave</button><button class="btn pel" data-del="${u.id}" ${yo ? "disabled" : ""}>Eliminar</button></div></td></tr>`; }).join("")}</tbody></table></div>
-    <h3>Crear usuario</h3><form id="fu" class="grid" style="margin-top:12px"><div><label for="u-u">Usuario (para iniciar sesión)</label><input id="u-u" required pattern="[a-zA-Z0-9._-]{3,30}" autocapitalize="none"></div><div><label for="u-n">Nombre</label><input id="u-n" required></div>
-    <div><label for="u-p">Contraseña (mín. 6)</label><input id="u-p" type="password" minlength="6" required autocomplete="new-password"></div>
-    <div><label for="u-r">Rol</label><select id="u-r"><option value="${ROL_VET}">Veterinario</option><option value="${ROL_ADMIN}">Administrador</option></select></div>
-    <div class="full"><button class="btn pri">Crear usuario</button></div></form></div>`;
-  const por = id => data.find(u => u.id === id), id = n => n.dataset;
+    <td><div class="fila"><button class="btn" data-edit="${u.id}">Editar</button><button class="btn pel" data-del="${u.id}" ${yo ? "disabled" : ""}>Eliminar</button></div></td></tr>`; }).join("")}</tbody></table></div></div>`;
+  const por = id => data.find(u => u.id === id);
   const intentar = async (f, ok) => { try { await f(); toast(ok); vistaUsuarios(); } catch (err) { toast(err.message, true); vistaUsuarios(); } };
-  document.querySelectorAll("[data-rol]").forEach(x => x.onchange = () => intentar(async () => {
-    await cambiarPerfil(x.dataset.rol, {rol: x.value}); log("Cambió rol", "perfiles", por(x.dataset.rol).usuario + " → " + x.value);
-  }, "Rol actualizado."));
+
+  // Formulario de creación: oculto hasta pulsar "Agregar usuario"
+  const cerrarForm = () => { $("fu").reset(); ocultarClaves($("fu")); $("fu").hidden = true; $("b-cancelar-u").disabled = true; $("b-agregar").disabled = false; };
+  $("b-agregar").onclick = () => { $("fu").hidden = false; $("b-cancelar-u").disabled = false; $("b-agregar").disabled = true; $("u-u").focus(); };
+  $("b-cancelar-u").onclick = cerrarForm;
+  $("fu").onsubmit = e => {
+    e.preventDefault(); const usuario = $("u-u").value.trim().toLowerCase(), rol = $("u-r").value;
+    intentar(async () => { await llamarAdmin({accion: "crear", usuario, nombre: $("u-n").value.trim(), password: $("u-p").value, rol}); log("Creó usuario", "perfiles", usuario + " (" + rol + ")"); }, "Usuario creado.");
+  };
+
   document.querySelectorAll("[data-act]").forEach(x => x.onclick = () => intentar(async () => {
     const u = por(x.dataset.act); await cambiarPerfil(u.id, {activo: !u.activo}); log(u.activo ? "Bloqueó usuario" : "Habilitó usuario", "perfiles", u.usuario);
   }, "Acceso actualizado."));
-  document.querySelectorAll("[data-clave]").forEach(x => x.onclick = () => {
-    const u = por(x.dataset.clave), p = prompt(`Nueva contraseña para ${u.usuario || u.nombre} (mín. 6 caracteres):`);
-    if (!p) return;
-    intentar(async () => { await llamarAdmin({accion: "clave", id: u.id, password: p}); log("Restableció contraseña", "perfiles", u.usuario); }, "Contraseña restablecida.");
-  });
   document.querySelectorAll("[data-del]").forEach(x => x.onclick = () => {
     const u = por(x.dataset.del); if (!confirm(`¿Eliminar definitivamente a ${u.nombre} (${u.usuario})?`)) return;
     intentar(async () => { await llamarAdmin({accion: "eliminar", id: u.id}); log("Eliminó usuario", "perfiles", u.usuario); }, "Usuario eliminado.");
   });
-  $("fu").onsubmit = e => {
-    e.preventDefault(); const usuario = $("u-u").value.trim().toLowerCase(), rol = $("u-r").value;
-    intentar(async () => { await llamarAdmin({accion: "crear", usuario, nombre: $("u-n").value.trim(), password: $("u-p").value, rol}); log("Creó usuario", "perfiles", usuario + " (" + rol + ")"); }, "Usuario creado.");
+
+  // Editar: tu propia fila abre "Mi cuenta"; las demás abren el editor de administrador
+  $("e-r").innerHTML = opciones;
+  $("e-x").onclick = () => $("dlg-editar").close();
+  document.querySelectorAll("[data-edit]").forEach(x => x.onclick = () => {
+    const u = por(x.dataset.edit);
+    if (u.id === perfil.id){ $("c-user").value = perfil.usuario || ""; $("c-nombre").value = perfil.nombre; return $("dlg-cuenta").showModal(); }
+    uEdit = u; $("e-u").value = u.usuario || ""; $("e-n").value = u.nombre; $("e-r").value = u.rol; $("e-p").value = "";
+    $("dlg-editar").showModal();
+  });
+  $("fe").onsubmit = async e => {
+    e.preventDefault(); const u = uEdit, usuario = $("e-u").value.trim().toLowerCase(), nombre = $("e-n").value.trim(), rol = $("e-r").value, clave = $("e-p").value;
+    try {
+      await cambiarPerfil(u.id, {usuario, nombre, rol});
+      if (clave) await llamarAdmin({accion: "clave", id: u.id, password: clave});
+      log("Editó usuario", "perfiles", usuario + (clave ? " (nueva contraseña)" : ""));
+      $("dlg-editar").close(); toast("Usuario actualizado."); vistaUsuarios();
+    } catch (err) { toast(/duplicate|unique/i.test(err.message) ? "Ese nombre de usuario ya existe." : err.message, true); }
   };
 }
 
