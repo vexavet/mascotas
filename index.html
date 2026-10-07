@@ -195,7 +195,12 @@ function pintarCabecera(){
     : `<button class="btn pri" id="b-login">Iniciar sesión</button>`;
   if ($("b-login")) $("b-login").onclick = () => $("dlg").showModal();
   if ($("b-cuenta")) $("b-cuenta").onclick = () => { $("c-user").value = perfil.usuario || ""; $("c-nombre").value = perfil.nombre; $("dlg-cuenta").showModal(); };
-  if ($("b-salir")) $("b-salir").onclick = async () => { await log("Cerró sesión"); await sb.auth.signOut(); perfil = null; selId = null; render(); };
+  if ($("b-salir")) $("b-salir").onclick = async () => {
+    try { await log("Cerró sesión"); await sb.auth.signOut(); } catch {}
+    try { await sb.auth.signOut({scope: "local"}); } catch {}
+    Object.keys(localStorage).filter(k => k.startsWith("sb-")).forEach(k => localStorage.removeItem(k)); // borra la sesión guardada
+    perfil = null; selId = null; vista = "mascotas"; render();
+  };
   const secs = [["mascotas","Mascotas"], ...(isAdmin() ? [["usuarios","Usuarios"],["actividad","Actividad"]] : [])];
   $("nav").innerHTML = !perfil ? "" : publicId ? `<a class="btn" href="${location.pathname}">Ir al panel</a>`
     : secs.map(([v,l]) => `<button class="btn ${v === vista ? "pri" : ""}" data-v="${v}">${l}</button>`).join("");
