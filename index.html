@@ -380,6 +380,7 @@ const nfcState = {
   initialized: false,
   lastSeq: 0,
   lastUid: "",
+  lastError: "",
   polling: false
 };
 
@@ -398,13 +399,15 @@ function updateNfcIndicators(){
 function downloadNfcBridgeScript(){
   const batContent = [
     '@echo off',
+    'chcp 65001 >nul',
     'title VEXAVET - Lector NFC ACR122U-A9',
     'color 0B',
     'echo ====================================================',
     'echo   VEXAVET - Puente Lector NFC ACR122U-A9 (Windows)',
     'echo ====================================================',
     'echo Iniciando servicio local en http://localhost:18923 ...',
-    'powershell -NoProfile -ExecutionPolicy Bypass -Command "$code = (Get-Content -LiteralPath \'%~f0\' -Raw) -split \'#__PS_START__\'; Invoke-Expression $code[1]"',
+    'set "BAT_PATH=%~f0"',
+    'powershell -NoProfile -ExecutionPolicy Bypass -Command "$code = [System.IO.File]::ReadAllText($env:BAT_PATH, [System.Text.Encoding]::UTF8) -split (\'#__PS_\' + \'START__\'); Invoke-Expression $code[1]"',
     'pause',
     'exit /b',
     '',
@@ -450,7 +453,7 @@ function downloadNfcBridgeScript(){
     '$listener.Prefixes.Add("http://localhost:18923/")',
     '$listener.Start()',
     'Write-Host "Servidor NFC escuchando correctamente. Puedes minimizar esta ventana." -ForegroundColor Green',
-    '$lastUid = ""; $scanSeq = 0; $cardPresent = $false; $lastReader = ""; $pending = $null',
+    '$lastUid = ""; $scanSeq = 0; $cardPresent = $false; $lastReader = ""; $browserLinked = $false; $pending = $null',
     'try {',
     '    while ($listener.IsListening) {',
     '        $reader = [PcScReader]::GetFirstReader($ctx)',
@@ -470,18 +473,24 @@ function downloadNfcBridgeScript(){
     '                }',
     '            } else { $cardPresent = $false }',
     '        }',
-    '        if ($null -eq $pending) { $pending = $listener.BeginGetContext($null, $null) }',
-    '        if ($pending.AsyncWaitHandle.WaitOne(150)) {',
+    '        $waitMs = 100',
+    '        while ($true) {',
+    '            if ($null -eq $pending) { $pending = $listener.BeginGetContext($null, $null) }',
+    '            if (-not $pending.AsyncWaitHandle.WaitOne($waitMs)) { break }',
+    '            $waitMs = 0',
     '            $context = $listener.EndGetContext($pending); $pending = $null',
     '            $req = $context.Request; $res = $context.Response',
-    '            $res.Headers.Add("Access-Control-Allow-Origin", "*")',
-    '            $res.Headers.Add("Access-Control-Allow-Methods", "GET, OPTIONS")',
+    '            $origin = $req.Headers["Origin"]',
+    '            if ($origin) { $res.Headers.Add("Access-Control-Allow-Origin", $origin); $res.Headers.Add("Vary", "Origin") }',
+    '            else { $res.Headers.Add("Access-Control-Allow-Origin", "*") }',
+    '            $res.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS")',
     '            $res.Headers.Add("Access-Control-Allow-Headers", "*")',
     '            $res.Headers.Add("Access-Control-Allow-Private-Network", "true")',
+    '            $res.Headers.Add("Access-Control-Max-Age", "86400")',
+    '            if (-not $browserLinked) { $browserLinked = $true; Write-Host "[OK] Navegador VEXAVET conectado al puente NFC." -ForegroundColor Magenta }',
     '            if ($req.HttpMethod -eq "OPTIONS") { $res.StatusCode = 204; $res.Close() }',
     '            else {',
-    '                $rJson = if ($reader) { $reader.Replace("\\","\\\\").Replace("\\"","\\\\\\"") } else { "" }',
-    '                $json = "{`"ok`":true,`"reader`":`"$rJson`",`"uid`":`"$lastUid`",`"seq`":$scanSeq}"',
+    '                $json = @{ ok = $true; reader = [string]$reader; uid = $lastUid; seq = $scanSeq } | ConvertTo-Json -Compress',
     '                $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)',
     '                $res.ContentType = "application/json; charset=utf-8"',
     '                $res.ContentLength64 = $bytes.Length',
@@ -514,10 +523,14 @@ function openNfcSetupModal(){
           <span class="badge ${nfcState.connected?"b-ok":"b-warn"}">${nfcState.connected ? "En línea" : "Sin conexión"}</span>
         </div>
 
+        ${!nfcState.connected ? `<div style="padding:10px 12px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;font-size:.82rem;color:#92400e">
+          Si el archivo <code>.bat</code> ya está abierto en Windows y aquí sigue en "Sin conexión", verifica si tu navegador bloquea conexiones locales (por ejemplo, desactiva <em>Brave Shields</em> para este sitio o permite el acceso a red local en Chrome/Edge).
+        </div>` : ""}
+
         <div style="font-size:.9rem;line-height:1.55">
           <p style="margin:0 0 8px"><strong>¿Cómo conectar tu ACR122U-A9 en 2 pasos?</strong></p>
           <ol style="margin:0;padding-left:20px;display:grid;gap:6px">
-            <li>Descarga el archivo puente nativo para Windows (no requiere instalar programas adicionales):<br>
+            <li>Descarga el archivo puente nativo para Windows:<br>
               <button type="button" class="btn pri sm" style="margin-top:6px" onclick="downloadNfcBridgeScript()"><i data-lucide="download"></i> Descargar VEXAVET_Lector_NFC.bat</button>
             </li>
             <li>Haz <strong>doble clic</strong> sobre <code>VEXAVET_Lector_NFC.bat</code> y déjalo minimizado mientras usas la computadora. El indicador superior cambiará automáticamente a <strong>NFC Activo</strong>.</li>
@@ -572,7 +585,12 @@ async function handleNfcScan(rawUid){
       return;
     }
     modalInput.value = uid;
-    toast(`Tarjeta NFC vinculada: ${uid}`);
+    const box = modalInput.closest(".full");
+    if (box){
+      box.style.background = "#f0fdf4";
+      box.style.borderColor = "#16a34a";
+    }
+    toast(`Tarjeta leída (${uid}). Pulsa "Guardar Paciente" para confirmar.`);
     return;
   }
 
@@ -591,7 +609,6 @@ async function handleNfcScan(rawUid){
       return;
     }
 
-    // Tarjeta aún no vinculada a ninguna mascota
     openModal({
       title: "Tarjeta NFC Nueva Detectada",
       bodyHTML: `
@@ -644,18 +661,19 @@ function startNfcBridge(){
   if (nfcState.polling) return;
   nfcState.polling = true;
 
-  setInterval(async () => {
+  const poll = async () => {
     try {
       const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 380);
-      const res = await fetch(NFC_BRIDGE_URL, { signal: ctrl.signal, cache: "no-store" });
+      const t = setTimeout(() => ctrl.abort(), 2000);
+      const res = await fetch(NFC_BRIDGE_URL + "?_t=" + Date.now(), { signal: ctrl.signal });
       clearTimeout(t);
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error("HTTP " + res.status);
       const data = await res.json();
       const wasConnected = nfcState.connected;
       const oldReader = nfcState.reader;
       nfcState.connected = Boolean(data.ok);
       nfcState.reader = data.reader || "";
+      nfcState.lastError = "";
 
       if (!wasConnected || oldReader !== nfcState.reader) updateNfcIndicators();
 
@@ -669,16 +687,20 @@ function startNfcBridge(){
         nfcState.lastUid = data.uid;
         handleNfcScan(data.uid);
       }
-    } catch {
+    } catch (err) {
+      nfcState.lastError = err?.message || "Sin conexión";
       if (nfcState.connected){
         nfcState.connected = false;
         nfcState.reader = "";
         updateNfcIndicators();
       }
+    } finally {
+      setTimeout(poll, 350);
     }
-  }, 450);
+  };
 
-  // Soporte adicional para lectores configurados en modo emulación de teclado
+  poll();
+
   let kBuf = "", kLast = 0;
   document.addEventListener("keydown", e => {
     const tag = (document.activeElement?.tagName || "").toUpperCase();
@@ -2147,7 +2169,7 @@ function openMascotaModal(id = null, prefillNfc = ""){
             <button type="button" class="btn sm sec" onclick="toast('Acerca la tarjeta NFC al lector ACR122U ahora…')"><i data-lucide="radio"></i> Esperando lectura</button>
             <button type="button" class="btn sm" onclick="$('pm-nfc-uid').value=''">Limpiar</button>
           </div>
-          <div style="font-size:.75rem;color:#64748b;margin-top:4px">Con esta ventana abierta, simplemente apoya la tarjeta sobre el lector ACR122U-A9 para capturar su código automáticamente.</div>
+          <div style="font-size:.75rem;color:#64748b;margin-top:4px">Con esta ventana abierta, apoya la tarjeta sobre el lector ACR122U-A9 para capturar su código y luego pulsa <strong>Guardar Paciente</strong>.</div>
         </div>
         <div><label>Estado reproductivo</label><select name="estado_reproductivo"><option value="">—</option>${["Entero/a","Esterilizado/a","Gestante","Lactante"].map(s => `<option ${m?.estado_reproductivo===s?"selected":""}>${s}</option>`).join("")}</select></div>
         <div style="display:flex;gap:16px;align-items:center;padding-top:20px">
@@ -3481,51 +3503,66 @@ function viewInformes(){
     </div>
 
     <div class="kpi-grid">
-      <div class="kpi-card"><div><div class="kpi-label">Ingresos Acumulados</div><div class="kpi-val">${money(totalIngresos)}</div></div><div class="kpi-ico" style="background:#dcfce7;color:#15803d"><i data-lucide="trending-up"></i></div></div>
+      <div class="kpi-card"><div><div class="kpi-label">Ingresos Totales</div><div class="kpi-val">${money(totalIngresos)}</div></div><div class="kpi-ico" style="background:#dcfce7;color:#15803d"><i data-lucide="trending-up"></i></div></div>
       <div class="kpi-card"><div><div class="kpi-label">Ticket Promedio</div><div class="kpi-val">${money(ticketProm)}</div></div><div class="kpi-ico" style="background:#dbeafe;color:#1d4ed8"><i data-lucide="receipt"></i></div></div>
-      <div class="kpi-card"><div><div class="kpi-label">Total Atenciones Clínicas</div><div class="kpi-val">${state.consultas.length + state.vacunas.length + state.cirugias.length}</div></div><div class="kpi-ico" style="background:#ccfbf1;color:#0f766e"><i data-lucide="activity"></i></div></div>
+      <div class="kpi-card"><div><div class="kpi-label">Total Consultas</div><div class="kpi-val">${state.consultas.length}</div></div><div class="kpi-ico" style="background:#ccfbf1;color:#0f766e"><i data-lucide="stethoscope"></i></div></div>
+      <div class="kpi-card"><div><div class="kpi-label">Total Vacunas Aplicadas</div><div class="kpi-val">${state.vacunas.length}</div></div><div class="kpi-ico" style="background:#ede9fe;color:#6d28d9"><i data-lucide="syringe"></i></div></div>
     </div>
 
-    <div class="card"><div class="card-body">
-      <h3 style="margin-bottom:10px">Resumen Operativo Consolidado</h3>
-      <p style="color:#475569;font-size:.9rem">Este módulo consolida las atenciones médicas, vacunación, rotación de inventario y facturación de <strong>${esc(state.config.nombre_clinica)}</strong>. Utiliza los botones superiores para descargar tus reportes en formato CSV compatible con Excel.</p>
-    </div></div>
+    <div class="card">
+      <div class="card-head"><span class="card-title">Productividad por Médico Veterinario</span></div>
+      <div class="tbl-wrap"><table class="saas-tbl">
+        <thead><tr><th>Profesional</th><th>Rol</th><th>Consultas</th><th>Vacunas</th><th>Citas Agendadas</th></tr></thead>
+        <tbody>
+          ${state.perfiles.map(u => {
+            const cCount = state.consultas.filter(c => (c.veterinario||"").toLowerCase() === (u.nombre||"").toLowerCase()).length;
+            const vCount = state.vacunas.filter(v => (v.veterinario||"").toLowerCase() === (u.nombre||"").toLowerCase()).length;
+            const agCount = state.citas.filter(a => (a.veterinario_nombre||"").toLowerCase() === (u.nombre||"").toLowerCase()).length;
+            return `<tr><td><strong>${esc(u.nombre)}</strong></td><td style="text-transform:capitalize">${esc(u.rol)}</td><td>${cCount}</td><td>${vCount}</td><td>${agCount}</td></tr>`;
+          }).join("")}
+        </tbody>
+      </table></div>
+    </div>
   `;
 }
 
-function exportCSV(kind){
-  let rows = [];
-  if (kind === "mascotas") rows = state.mascotas.map(m => ({ Nombre: m.nombre, Especie: m.especie, Raza: m.raza||"", Sexo: m.sexo||"", Peso_kg: m.peso_kg||"", NFC_UID: getPetNfcUid(m), Propietario: m.duenio_nombre||"", Telefono: m.duenio_telefono||"" }));
-  if (kind === "ventas") rows = state.ventas.map(v => ({ Numero: v.numero_venta, Fecha: v.creado_en, Cliente: v.cliente_nombre, Metodo: v.metodo_pago, Total: v.total, Estado: v.estado_pago }));
-  if (kind === "inventario") rows = state.productos.map(p => ({ Codigo: p.codigo||"", Producto: p.nombre, Categoria: p.categoria||"", Costo: p.precio_costo, Venta: p.precio_venta, Existencias: p.existencias }));
-  if (!rows.length) return toast("No hay datos para exportar.", true);
-  const headers = Object.keys(rows[0]);
-  const csv = [headers.join(","), ...rows.map(r => headers.map(h => `"${String(r[h]).replace(/"/g,'""')}"`).join(","))].join("\n");
+function exportCSV(type){
+  let rows = [], filename = `vexavet_${type}_${hoy()}.csv`;
+  if (type === "mascotas"){
+    rows = [["Nombre","Especie","Raza","Sexo","Nacimiento","Peso_kg","NFC_UID","Propietario","Telefono","Vacunas_Al_Dia"],
+      ...state.mascotas.map(m => [m.nombre, m.especie, m.raza, m.sexo, m.fecha_nacimiento, m.peso_kg, getPetNfcUid(m), m.duenio_nombre, m.duenio_telefono, m.vacunas_al_dia ? "Si" : "No"])];
+  } else if (type === "ventas"){
+    rows = [["Numero","Fecha","Cliente","Mascota","Metodo","Estado","Subtotal","Impuesto","Total"],
+      ...state.ventas.map(v => [v.numero_venta, v.creado_en, v.cliente_nombre, v.mascota_nombre, v.metodo_pago, v.estado_pago, v.subtotal, v.impuesto, v.total])];
+  } else {
+    rows = [["Codigo","Nombre","Categoria","Costo","Venta","Existencias","Minimo","Vencimiento"],
+      ...state.productos.map(p => [p.codigo || p.sku, p.nombre, p.categoria, p.precio_costo, p.precio_venta, p.existencias, p.stock_minimo, p.fecha_vencimiento])];
+  }
+  const csv = "\uFEFF" + rows.map(r => r.map(c => `"${String(c ?? "").replace(/"/g,'""')}"`).join(",")).join("\n");
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob(["\uFEFF" + csv], {type: "text/csv;charset=utf-8;"}));
-  a.download = `vexavet_${kind}_${hoy()}.csv`;
+  a.href = URL.createObjectURL(new Blob([csv], {type: "text/csv;charset=utf-8;"}));
+  a.download = filename;
   a.click();
-  toast("Reporte CSV descargado.");
 }
 
-/* ============ 14. USUARIOS Y ROLES ============ */
+/* ============ 14. USUARIOS Y ROLES (ADMIN) ============ */
 function viewUsuarios(){
-  if (!isAdmin()) return;
+  if (!isAdmin()) return viewDashboard();
   $("workspace").innerHTML = `
     <div class="page-head">
-      <div><h1 class="page-title">Usuarios, Roles y Permisos</h1><p class="page-sub">Control de acceso del personal veterinario y administrativo</p></div>
+      <div><h1 class="page-title">Usuarios, Roles y Permisos</h1><p class="page-sub">Control de acceso del personal médico y administrativo</p></div>
     </div>
 
-    <div class="grid-2" style="grid-template-columns:1fr 1.6fr;align-items:start">
+    <div class="grid-2">
       <div class="card">
         <div class="card-head"><span class="card-title">Crear Nuevo Usuario</span></div>
         <div class="card-body">
-          <form id="fu" style="display:grid;gap:12px">
-            <div><label>Usuario *</label><input name="usuario" required pattern="[a-zA-Z0-9._-]{3,30}" autocapitalize="none" placeholder="ej. dr.lopez"></div>
+          <form id="f-nu" class="form-grid">
+            <div><label>Usuario *</label><input name="usuario" required pattern="[a-zA-Z0-9._-]{3,30}" autocapitalize="none" placeholder="ej. dra.martinez"></div>
             <div><label>Nombre Completo *</label><input name="nombre" required></div>
-            <div><label>Contraseña Inicial (mín. 6) *</label><input name="pass" type="password" minlength="6" required></div>
-            <div><label>Rol</label><select name="rol"><option value="${ROL_VET}">Veterinario</option><option value="${ROL_ADMIN}">Administrador</option></select></div>
-            <button class="btn pri" id="bu">Crear Usuario</button>
+            <div><label>Contraseña (mín. 6) *</label><input name="pass" type="password" minlength="6" required></div>
+            <div><label>Rol *</label><select name="rol"><option value="${ROL_VET}">Veterinario</option><option value="${ROL_ADMIN}">Administrador</option></select></div>
+            <div class="full"><button class="btn pri">Crear Usuario</button></div>
           </form>
         </div>
       </div>
@@ -3536,23 +3573,25 @@ function viewUsuarios(){
           <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
           <tbody>
             ${state.perfiles.map(u => {
-              const yo = u.id === perfil.id;
+              const esYo = u.id === perfil.id;
               return `<tr>
                 <td>
-                  <div style="display:flex;align-items:center;gap:9px">
-                    <span class="user-ava" style="width:32px;height:32px;font-size:.82rem">${userAvatarHTML(u)}</span>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span class="user-ava" style="width:30px;height:30px">${userAvatarHTML(u)}</span>
                     <strong>${esc(u.usuario || u.email)}</strong>
                   </div>
                 </td>
-                <td>${esc(u.nombre)}${yo ? ` <span class="badge b-teal">tú</span>` : ""}</td>
+                <td>${esc(u.nombre)}</td>
                 <td style="text-transform:capitalize">${esc(u.rol)}</td>
-                <td><span class="badge ${u.activo ? "b-ok" : "b-err"}">${u.activo ? "Activo" : "Bloqueado"}</span></td>
+                <td><span class="badge ${u.activo?"b-ok":"b-err"}">${u.activo?"Activo":"Bloqueado"}</span></td>
                 <td>
-                  ${yo ? "—" : `<div class="fila">
+                  <div class="fila">
                     <button class="btn sm" onclick="abrirEditarUsuario('${u.id}')">Editar</button>
-                    <button class="btn sm ${u.activo ? "rojo" : "verde"}" onclick="toggleUserActive('${u.id}',${!u.activo})">${u.activo ? "Bloquear" : "Activar"}</button>
-                    <button class="btn sm pel" onclick="deleteUser('${u.id}')">Eliminar</button>
-                  </div>`}
+                    ${esYo ? "" : `
+                      <button class="btn sm ${u.activo?"pel":"verde"}" onclick="toggleUserActive('${u.id}',${!u.activo})">${u.activo?"Bloquear":"Activar"}</button>
+                      <button class="btn sm rojo" onclick="deleteUser('${u.id}')">Eliminar</button>
+                    `}
+                  </div>
                 </td>
               </tr>`;
             }).join("")}
@@ -3563,152 +3602,171 @@ function viewUsuarios(){
   `;
   ojos($("workspace"));
 
-  $("fu").onsubmit = async e => {
-    e.preventDefault(); $("bu").disabled = true;
-    const f = new FormData(e.target);
-    const { data, error } = await sb.rpc("crear_usuario", {
-      p_usuario: f.get("usuario"), p_password: f.get("pass"), p_nombre: f.get("nombre"), p_rol: f.get("rol")
+  $("f-nu").onsubmit = async e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const usuario = fd.get("usuario").trim().toLowerCase(), nombre = fd.get("nombre").trim(), pass = fd.get("pass"), rol = fd.get("rol");
+    const { data: { session } } = await sb.auth.getSession();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-usuarios`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + session.access_token},
+      body: JSON.stringify({usuario, nombre, password: pass, rol})
     });
-    $("bu").disabled = false;
-    if (error) return toast("Error: " + error.message, true);
-    if (!data?.ok) return toast(data?.error || "No se pudo crear el usuario.", true);
-    e.target.reset();
-    log("Creó usuario", "perfiles", f.get("usuario"));
-    await syncAllData(); viewUsuarios(); toast("Usuario creado correctamente.");
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) return toast(out.error || "No se pudo crear el usuario.", true);
+    e.target.reset(); await syncAllData(); renderSaas(); toast("Usuario creado correctamente.");
   };
 }
 
-let editandoUsuario = null, euFotoPendiente = null;
+let editando = null;
 function abrirEditarUsuario(id){
   const u = state.perfiles.find(x => x.id === id);
   if (!u) return;
-  editandoUsuario = u;
-  euFotoPendiente = undefined;
-  $("e-u").value = u.usuario || ""; $("e-n").value = u.nombre; $("e-p").value = "";
+  editando = u;
+  $("e-u").value = u.usuario || "";
+  $("e-n").value = u.nombre;
+  $("e-p").value = "";
+  $("e-r").innerHTML = [ROL_VET, ROL_ADMIN].map(r => `<option value="${r}"${u.rol === r ? " selected" : ""}>${r}</option>`).join("");
+  $("e-r").disabled = u.id === perfil.id;
   $("eu-ava-prev").innerHTML = userAvatarHTML(u);
   $("eu-foto-del").hidden = !getUserFoto(u);
-  $("e-r").innerHTML = [[ROL_VET,"Veterinario"],[ROL_ADMIN,"Administrador"]].map(([v,t]) => `<option value="${v}" ${u.rol===v?"selected":""}>${t}</option>`).join("");
   $("dlg-editar").showModal();
   icons();
 }
 $("eu-foto-file").onchange = async e => {
   const f = e.target.files[0];
-  if (!f) return;
+  if (!f || !editando) return;
   try {
     const url = await uploadBrandingOrAvatar(f, "perfiles", 400, false);
-    euFotoPendiente = url;
-    $("eu-ava-prev").innerHTML = `<img src="${esc(url)}" alt="Vista previa">`;
+    await saveUserPhoto(editando.id, url);
+    $("eu-ava-prev").innerHTML = userAvatarHTML(editando);
     $("eu-foto-del").hidden = false;
-  } catch { toast("No se pudo procesar la foto.", true); }
+    log("Actualizó foto de usuario", "perfiles", editando.usuario);
+    toast("Foto de usuario actualizada.");
+    renderSaas();
+  } catch { toast("No se pudo subir la imagen.", true); }
   e.target.value = "";
 };
-$("eu-foto-del").onclick = () => {
-  euFotoPendiente = "";
-  $("eu-ava-prev").innerHTML = esc((editandoUsuario?.nombre || "U")[0].toUpperCase());
+$("eu-foto-del").onclick = async () => {
+  if (!editando || !confirm("¿Eliminar la foto de este usuario?")) return;
+  await saveUserPhoto(editando.id, "");
+  $("eu-ava-prev").innerHTML = userAvatarHTML(editando);
   $("eu-foto-del").hidden = true;
+  toast("Foto eliminada.");
+  renderSaas();
 };
 $("e-x").onclick = () => $("dlg-editar").close();
-$("fe").onsubmit = async e => {
+$("fe").addEventListener("submit", async e => {
   e.preventDefault();
-  const { data, error } = await sb.rpc("editar_usuario", {
-    p_id: editandoUsuario.id, p_usuario: $("e-u").value, p_nombre: $("e-n").value, p_rol: $("e-r").value, p_password: $("e-p").value || null
+  if (!editando) return;
+  const body = {id: editando.id, usuario: $("e-u").value.trim().toLowerCase(), nombre: $("e-n").value.trim()};
+  if (!$("e-r").disabled) body.rol = $("e-r").value;
+  if ($("e-p").value) body.password = $("e-p").value;
+  const { data: { session } } = await sb.auth.getSession();
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-usuarios`, {
+    method: "PATCH",
+    headers: {"Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + session.access_token},
+    body: JSON.stringify(body)
   });
-  if (error) return toast("Error: " + error.message, true);
-  if (!data?.ok) return toast(data?.error || "No se pudo guardar.", true);
-  if (euFotoPendiente !== undefined){
-    await saveUserPhoto(editandoUsuario.id, euFotoPendiente);
-  }
-  $("dlg-editar").close();
-  log("Editó usuario", "perfiles", $("e-u").value);
-  await syncAllData(); viewUsuarios(); toast("Cambios guardados.");
-};
+  const out = await res.json().catch(() => ({}));
+  if (!res.ok) return toast(out.error || "No se pudo actualizar.", true);
+  if (editando.id === perfil.id){ perfil.usuario = body.usuario; perfil.nombre = body.nombre; }
+  $("dlg-editar").close(); await syncAllData(); renderSaas(); toast("Usuario actualizado.");
+});
 
 async function toggleUserActive(id, activo){
-  const u = state.perfiles.find(x => x.id === id);
-  const { data, error } = await sb.rpc("cambiar_estado_usuario", {p_id: id, p_activo: activo});
-  if (error || !data?.ok) return toast(data?.error || error?.message || "No se pudo cambiar estado.", true);
-  log(activo ? "Activó usuario" : "Bloqueó usuario", "perfiles", u?.usuario);
-  await syncAllData(); viewUsuarios(); toast(activo ? "Usuario activado." : "Usuario bloqueado.");
+  const { data: { session } } = await sb.auth.getSession();
+  await fetch(`${SUPABASE_URL}/functions/v1/admin-usuarios`, {
+    method: "PATCH",
+    headers: {"Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + session.access_token},
+    body: JSON.stringify({id, activo})
+  });
+  await syncAllData(); renderSaas(); toast(activo ? "Usuario activado." : "Usuario bloqueado.");
 }
 
 async function deleteUser(id){
   const u = state.perfiles.find(x => x.id === id);
-  if (!confirm(`¿Eliminar definitivamente al usuario "${u?.nombre}"?`)) return;
-  const { data, error } = await sb.rpc("eliminar_usuario", {p_id: id});
-  if (error || !data?.ok) return toast(data?.error || error?.message || "No se pudo eliminar.", true);
-  log("Eliminó usuario", "perfiles", u?.usuario);
-  await syncAllData(); viewUsuarios(); toast("Usuario eliminado.");
+  if (!u || !confirm(`¿Eliminar definitivamente a ${u.usuario || u.nombre}?`)) return;
+  const { data: { session } } = await sb.auth.getSession();
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-usuarios`, {
+    method: "DELETE",
+    headers: {"Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + session.access_token},
+    body: JSON.stringify({id})
+  });
+  if (!res.ok) return toast("No se pudo eliminar el usuario.", true);
+  await syncAllData(); renderSaas(); toast("Usuario eliminado.");
 }
 
-/* ============ 15. CONFIGURACIÓN ============ */
+/* ============ 15. CONFIGURACIÓN DEL SISTEMA ============ */
 function viewConfiguracion(){
-  if (!isAdmin()) return;
+  if (!isAdmin()) return viewDashboard();
   const c = state.config;
-  const logoActual = getBrandLogoUrl();
+  const logo = getBrandLogoUrl();
   $("workspace").innerHTML = `
     <div class="page-head">
-      <div><h1 class="page-title">Configuración General de la Clínica</h1><p class="page-sub">Identidad visual, datos fiscales, moneda, impuestos y sedes</p></div>
+      <div><h1 class="page-title">Configuración de la Clínica</h1><p class="page-sub">Identidad visual, logotipo, datos fiscales, moneda e impuestos</p></div>
     </div>
 
-    <div class="card" style="max-width:860px"><div class="card-body">
-      <div style="display:flex;align-items:center;gap:16px;padding:14px;background:#f8fafc;border:1px solid var(--saas-border);border-radius:12px;margin-bottom:18px;flex-wrap:wrap">
-        <div id="cfg-logo-box" style="width:68px;height:68px;border-radius:14px;background:#fff;border:1px solid var(--saas-border);display:grid;place-items:center;overflow:hidden;flex-shrink:0">
-          ${logoActual ? `<img src="${esc(logoActual)}" alt="Logo" style="width:100%;height:100%;object-fit:contain;padding:4px">` : `<i data-lucide="heart-pulse" style="width:32px;height:32px;color:#0d9488"></i>`}
-        </div>
-        <div style="flex:1;min-width:200px">
-          <strong style="font-size:.95rem">Logo de la Clínica / Marca</strong>
-          <div style="font-size:.8rem;color:#64748b;margin:2px 0 8px">Se mostrará en el panel lateral, inicio de sesión, recetas médicas y facturas.</div>
-          <input type="file" id="cfg-logo-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
-          <div class="fila">
-            <button type="button" class="btn sm pri" onclick="$('cfg-logo-file').click()"><i data-lucide="upload"></i> Subir / Cambiar Logo</button>
-            <button type="button" class="btn sm pel" id="cfg-logo-del" ${logoActual ? "" : "hidden"}>Quitar Logo</button>
+    <div class="card">
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:16px;padding:14px;background:#f8fafc;border:1px solid var(--saas-border);border-radius:12px;margin-bottom:18px;flex-wrap:wrap">
+          <div id="cfg-logo-prev" style="width:72px;height:72px;border-radius:14px;border:1px solid var(--saas-border);background:#fff;display:grid;place-items:center;overflow:hidden;flex-shrink:0">
+            ${logo ? `<img src="${esc(logo)}" alt="Logo" style="width:100%;height:100%;object-fit:contain;padding:4px">` : `<i data-lucide="heart-pulse" style="width:32px;height:32px;color:var(--saas-pri)"></i>`}
+          </div>
+          <div style="display:grid;gap:6px">
+            <strong style="font-size:.95rem">Logotipo Institucional de la Clínica</strong>
+            <div style="font-size:.8rem;color:var(--saas-muted)">Se mostrará en el menú lateral, recetas médicas, certificados y comprobantes de venta.</div>
+            <input type="file" id="cfg-logo-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+            <div class="fila">
+              <button type="button" class="btn sm pri" onclick="$('cfg-logo-file').click()"><i data-lucide="upload"></i> Subir / Cambiar Logo</button>
+              <button type="button" class="btn sm pel" id="cfg-logo-del" ${logo ? "" : "hidden"}>Quitar Logo</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <form id="f-cfg" class="form-grid">
-        <div><label>Nombre de la Clínica *</label><input name="nombre_clinica" value="${esc(c.nombre_clinica)}" required></div>
-        <div><label>NIT / RUC / Identificación Fiscal</label><input name="nit_ruc" value="${esc(c.nit_ruc || "")}"></div>
-        <div><label>País</label><input name="pais" value="${esc(c.pais || "Ecuador")}"></div>
-        <div><label>Ciudad</label><input name="ciudad" value="${esc(c.ciudad || "")}"></div>
-        <div><label>Símbolo de Moneda</label><input name="moneda" value="${esc(c.moneda || "$")}"></div>
-        <div><label>Nombre del Impuesto (IVA / IGV)</label><input name="impuesto_nombre" value="${esc(c.impuesto_nombre || "IVA")}"></div>
-        <div><label>Porcentaje de Impuesto (%)</label><input type="number" step="0.01" name="impuesto_porcentaje" value="${c.impuesto_porcentaje ?? 15}"></div>
-        <div><label>Teléfono Principal</label><input name="telefono" value="${esc(c.telefono || "")}"></div>
-        <div><label>Correo Corporativo</label><input name="email" value="${esc(c.email || "")}"></div>
-        <div><label>Horario de Atención</label><input name="horario" value="${esc(c.horario || "")}"></div>
-        <div class="full"><label>Dirección</label><input name="direccion" value="${esc(c.direccion || "")}"></div>
-        <div><label>Sedes / Sucursales</label><input name="sedes" value="${esc(c.sedes || "")}"></div>
-        <div><label>Métodos de Pago (separados por coma)</label><input name="metodos_pago" value="${esc(c.metodos_pago || "")}"></div>
-        <div class="full" style="margin-top:8px"><button class="btn pri">Guardar Configuración</button></div>
-      </form>
-    </div></div>
+        <form id="f-cfg" class="form-grid">
+          <div><label>Nombre de la Clínica *</label><input name="nombre_clinica" value="${esc(c.nombre_clinica)}" required></div>
+          <div><label>NIT / RUC / Identificación Fiscal</label><input name="nit_ruc" value="${esc(c.nit_ruc || "")}"></div>
+          <div><label>País</label><input name="pais" value="${esc(c.pais || "Ecuador")}"></div>
+          <div><label>Ciudad</label><input name="ciudad" value="${esc(c.ciudad || "")}"></div>
+          <div class="full"><label>Dirección Completa</label><input name="direccion" value="${esc(c.direccion || "")}"></div>
+          <div><label>Teléfono de Contacto</label><input name="telefono" value="${esc(c.telefono || "")}"></div>
+          <div><label>Correo Electrónico</label><input name="email" value="${esc(c.email || "")}"></div>
+          <div><label>Moneda (Símbolo)</label><input name="moneda" value="${esc(c.moneda || "$")}"></div>
+          <div><label>Nombre del Impuesto</label><input name="impuesto_nombre" value="${esc(c.impuesto_nombre || "IVA")}"></div>
+          <div><label>Porcentaje de Impuesto (%)</label><input type="number" step="0.01" name="impuesto_porcentaje" value="${c.impuesto_porcentaje ?? 15}"></div>
+          <div><label>Horario de Atención</label><input name="horario" value="${esc(c.horario || "")}"></div>
+          <div><label>Sedes / Sucursales</label><input name="sedes" value="${esc(c.sedes || "")}"></div>
+          <div><label>Métodos de Pago (separados por coma)</label><input name="metodos_pago" value="${esc(c.metodos_pago || "")}"></div>
+          <div class="full"><button class="btn pri">Guardar Configuración</button></div>
+        </form>
+      </div>
+    </div>
   `;
 
   $("cfg-logo-file").onchange = async e => {
     const f = e.target.files[0];
     if (!f) return;
     try {
-      const url = await uploadBrandingOrAvatar(f, "branding", 512, true);
+      const url = await uploadBrandingOrAvatar(f, "branding", 500, true);
       state.config.logo_url = url;
       localStorage.setItem("vx_logo_url", url);
       localStorage.setItem("vx_config_cache", JSON.stringify(state.config));
       try { await db.update("configuracion_clinica", 1, { logo_url: url }); } catch {}
-      log("Actualizó logo de la clínica", "configuracion");
-      toast("Logo de la clínica actualizado.");
+      log("Actualizó logotipo institucional", "configuracion_clinica");
+      toast("Logotipo actualizado.");
       renderSaas();
-    } catch { toast("No se pudo cargar el logo.", true); }
+    } catch { toast("No se pudo subir el logotipo.", true); }
     e.target.value = "";
   };
 
   $("cfg-logo-del").onclick = async () => {
-    if (!confirm("¿Restaurar el icono predeterminado y quitar el logo personalizado?")) return;
+    if (!confirm("¿Eliminar el logotipo personalizado?")) return;
     state.config.logo_url = "";
     localStorage.removeItem("vx_logo_url");
     localStorage.setItem("vx_config_cache", JSON.stringify(state.config));
     try { await db.update("configuracion_clinica", 1, { logo_url: null }); } catch {}
-    log("Eliminó logo de la clínica", "configuracion");
-    toast("Logo eliminado.");
+    toast("Logotipo eliminado.");
     renderSaas();
   };
 
@@ -3716,49 +3774,45 @@ function viewConfiguracion(){
     e.preventDefault();
     const fd = new FormData(e.target);
     const payload = {
-      id: 1,
       nombre_clinica: fd.get("nombre_clinica").trim(),
       nit_ruc: fd.get("nit_ruc").trim(),
       pais: fd.get("pais").trim(),
       ciudad: fd.get("ciudad").trim(),
+      direccion: fd.get("direccion").trim(),
+      telefono: fd.get("telefono").trim(),
+      email: fd.get("email").trim(),
       moneda: fd.get("moneda").trim() || "$",
       impuesto_nombre: fd.get("impuesto_nombre").trim() || "IVA",
       impuesto_porcentaje: Number(fd.get("impuesto_porcentaje") || 0),
-      telefono: fd.get("telefono").trim(),
-      email: fd.get("email").trim(),
       horario: fd.get("horario").trim(),
-      direccion: fd.get("direccion").trim(),
       sedes: fd.get("sedes").trim(),
       metodos_pago: fd.get("metodos_pago").trim(),
       logo_url: getBrandLogoUrl() || null
     };
     state.config = {...state.config, ...payload};
     localStorage.setItem("vx_config_cache", JSON.stringify(state.config));
-    try {
-      const { error } = await sb.from("configuracion_clinica").upsert(payload);
-      if (error && !isMissingTableErr(error)) throw error;
-    } catch {}
-    log("Actualizó configuración", "configuracion", payload.nombre_clinica);
-    renderSaas();
-    toast("Configuración guardada.");
+    try { await db.update("configuracion_clinica", 1, payload); } catch {}
+    log("Actualizó configuración clínica", "configuracion_clinica");
+    renderSaas(); toast("Configuración guardada.");
   };
+  icons();
 }
 
 /* ============ 16. AUDITORÍA ============ */
 function viewAuditoria(){
-  if (!isAdmin()) return;
+  if (!isAdmin()) return viewDashboard();
   $("workspace").innerHTML = `
     <div class="page-head">
-      <div><h1 class="page-title">Registro de Actividad y Auditoría</h1><p class="page-sub">Historial trazable de acciones realizadas por los usuarios</p></div>
+      <div><h1 class="page-title">Registro de Actividad y Auditoría</h1><p class="page-sub">Trazabilidad completa de acciones realizadas por los usuarios</p></div>
     </div>
     <div class="card"><div class="tbl-wrap"><table class="saas-tbl">
-      <thead><tr><th>Fecha y Hora</th><th>Usuario</th><th>Acción</th><th>Módulo / Entidad</th><th>Detalle</th></tr></thead>
+      <thead><tr><th>Fecha y Hora</th><th>Usuario</th><th>Acción</th><th>Módulo</th><th>Detalle</th></tr></thead>
       <tbody>
         ${state.actividad.map(a => `<tr>
-          <td>${fechaHora(a.creado_en)}</td>
+          <td style="white-space:nowrap">${fechaHora(a.creado_en)}</td>
           <td><strong>${esc(a.usuario_email || "—")}</strong></td>
           <td>${esc(a.accion)}</td>
-          <td><span class="badge b-gray">${esc(a.entidad || "—")}</span></td>
+          <td><span class="badge b-gray">${esc(a.entidad || "sistema")}</span></td>
           <td>${esc(a.detalle || "—")}</td>
         </tr>`).join("") || `<tr><td colspan="5">Sin registros de auditoría.</td></tr>`}
       </tbody>
@@ -3768,7 +3822,7 @@ function viewAuditoria(){
 
 /* ============ ARRANQUE ============ */
 function render(){
-  if (publicId && (!perfil || forzarPublico)) return pintarPublico();
+  if (publicId && (forzarPublico || !perfil)) return pintarPublico();
   if (!perfil) return pintarPortada();
   renderSaas();
 }
@@ -3777,7 +3831,7 @@ function render(){
   startNfcBridge();
   await loadPublicBranding();
   const { data: { session } } = await sb.auth.getSession();
-  if (session){
+  if (session?.user){
     await cargarPerfil(session.user);
     if (perfil) await syncAllData();
   }
