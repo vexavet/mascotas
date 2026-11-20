@@ -3,586 +3,1057 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#ffae00">
-<title>VEXAVET | Carnet Digital</title>
+<meta name="theme-color" content="#0d9488">
+<title>VEXAVET | Plataforma Clínica Veterinaria</title>
+<link id="app-favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230d9488'/%3E%3Cpath d='M12 34h10l5-12 9 24 6-14h10' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Figtree:wght@400;500;600&family=Montserrat:wght@800&family=Zilla+Slab:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&family=Montserrat:wght@800&family=Zilla+Slab:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
 <style>
-:root{color-scheme:light;--fondo:#ffae00;--panel:#fff;--tinta:#1c1236;--suave:#5f5675;--linea:#eadfc0;--pri:#4318e5;--pri2:#3310b8;--acento:#ff1a5e;--aviso:#ffae00;--peligro:#d90f4f;--ro:#fcf7e8;--bloq:#ece8fb;--bloq-borde:#d8d0f4;--r:10px}
+:root{
+  color-scheme:light;
+  --saas-bg:#f3f6fa;
+  --saas-card:#ffffff;
+  --saas-ink:#0f172a;
+  --saas-muted:#64748b;
+  --saas-border:#e2e8f0;
+  --saas-pri:#0d9488;
+  --saas-pri-dark:#0f766e;
+  --saas-pri-soft:#ccfbf1;
+  --saas-sec:#2563eb;
+  --saas-sec-soft:#dbeafe;
+  --saas-sidebar:#0f172a;
+  --saas-sidebar-hover:#1e293b;
+  --saas-sidebar-active:#0d9488;
+  --fondo:var(--saas-bg);
+  --panel:var(--saas-card);
+  --tinta:var(--saas-ink);
+  --suave:var(--saas-muted);
+  --linea:var(--saas-border);
+  --pri:var(--saas-pri);
+  --pri2:var(--saas-pri-dark);
+  --acento:var(--saas-sec);
+  --aviso:#f59e0b;
+  --peligro:#dc2626;
+  --ro:var(--saas-pri-soft);
+  --bloq:var(--saas-sec-soft);
+  --bloq-borde:#bfdbfe;
+  --r:12px;
+  --ok:#16a34a;--ok-soft:#dcfce7;
+  --warn:#d97706;--warn-soft:#fef3c7;
+  --err:#dc2626;--err-soft:#fee2e2;
+  --shadow-sm:0 1px 2px rgba(15,23,42,.05);
+  --shadow-md:0 4px 14px rgba(15,23,42,.07);
+}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{margin:0;background:var(--fondo);color:var(--tinta);font:400 16px/1.5 Figtree,system-ui,sans-serif}
-h1,h2,h3{font-family:"Bricolage Grotesque",Figtree,sans-serif;margin:0;letter-spacing:-.01em}
-.app{max-width:1120px;margin:0 auto;padding:16px 16px 40px}
-header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-.marca{font:700 1.5rem "Bricolage Grotesque",sans-serif;color:var(--pri);text-decoration:none}
-.marca small{font:500 .85rem Figtree;color:var(--tinta);margin-left:8px}
+body{margin:0;background:var(--saas-bg);color:var(--saas-ink);font:400 15px/1.5 Figtree,system-ui,sans-serif;min-height:100vh}
+body.login-mode{background:radial-gradient(circle at 85% 15%, #ccfbf1 0%, #f3f6fa 45%, #e2e8f0 100%);min-height:100vh}
+body.saas-mode{background:var(--saas-bg);color:var(--saas-ink)}
+h1,h2,h3,h4{font-family:"Bricolage Grotesque",Figtree,sans-serif;margin:0;letter-spacing:-.015em}
+
+/* ================= PORTADA & PERFIL PÚBLICO ================= */
+.app{max-width:1120px;margin:0 auto;padding:20px 20px 48px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px;position:relative;padding:12px 18px;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border:1px solid var(--saas-border);border-radius:14px;box-shadow:var(--shadow-sm)}
+.marca{display:inline-flex;align-items:center;gap:10px;font:800 1.35rem "Bricolage Grotesque",sans-serif;color:var(--saas-ink);text-decoration:none}
+.marca small{font:500 .84rem Figtree,sans-serif;color:var(--saas-muted);margin-left:2px;padding-left:10px;border-left:1px solid var(--saas-border)}
 #nav,#sesion,.fila{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.chip{font-size:.85rem;color:var(--tinta)}
-.panel{background:var(--panel);border:1px solid var(--linea);border-radius:var(--r)}
+.chip{font-size:.86rem;color:var(--saas-muted)}
+.panel{background:var(--saas-card);border:1px solid var(--saas-border);border-radius:14px;box-shadow:var(--shadow-sm)}
 .pad{padding:24px}
-.layout{display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start}
-.lista{padding:14px}.lista-cab{display:flex;gap:8px;margin-bottom:10px}.lista-cab input{flex:1;min-width:0}
-#lista{list-style:none;margin:0;padding:0;max-height:64vh;overflow:auto}
-#lista button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:8px;cursor:pointer}
-#lista button:hover{background:var(--ro)}
-#lista button[aria-current=true]{background:var(--pri);color:#fff}
-#lista .n{font-weight:600;display:block}#lista .s{font-size:.8rem;opacity:.75}
-.mini,.avatar{flex:none;border-radius:50%;overflow:hidden;background:var(--ro);color:var(--pri);display:grid;place-items:center;font:700 1rem "Bricolage Grotesque",sans-serif}
-.mini{width:40px;height:40px}.avatar{width:92px;height:92px;font-size:2.2rem;border:2px solid var(--linea)}
-.mini img,.avatar img{width:100%;height:100%;object-fit:cover}
-.vacio{color:var(--suave);padding:14px;font-size:.92rem}
-.det{padding:20px;min-width:0}
-.cab{display:flex;gap:16px;align-items:center;margin-bottom:14px}.cab-t{display:grid;gap:8px;min-width:0}
-.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--linea);margin-bottom:16px}
-button.tab{font:500 .92rem Figtree;background:none;border:0;border-bottom:3px solid transparent;padding:10px 12px;color:var(--suave);cursor:pointer;white-space:nowrap}
-button.tab[aria-current=true]{color:var(--pri);border-bottom-color:var(--acento);font-weight:600}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}.full{grid-column:1/-1}
-label{display:block;font-size:.86rem;font-weight:500;margin-bottom:4px}
-input,select,textarea{width:100%;font:inherit;color:inherit;background:var(--panel);border:1px solid var(--linea);border-radius:8px;padding:9px 11px;min-height:42px}
-textarea{min-height:84px;resize:vertical}
-fieldset{border:0;margin:0;padding:0;min-width:0}
-input:disabled,select:disabled,textarea:disabled{background:var(--bloq);border-color:var(--bloq-borde);color:var(--suave);-webkit-text-fill-color:var(--suave);opacity:1;cursor:not-allowed;appearance:none}
-.clave input:disabled+.ojo{opacity:.4;pointer-events:none}
-.btn.chico{min-height:36px;padding:0 14px;font-size:.88rem}
-.check{display:flex;align-items:center;gap:10px}.check input{width:20px;height:20px;min-height:0;accent-color:var(--pri)}.check label{margin:0}
-:focus-visible{outline:2px solid var(--pri);outline-offset:1px}
-.btn{font:600 .92rem Figtree,sans-serif;min-height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--linea);background:var(--panel);color:var(--tinta);cursor:pointer;display:inline-flex;align-items:center;text-decoration:none}
-.btn:hover{border-color:var(--pri)}.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}.btn.pri:hover{background:var(--pri2)}
-.btn.pel{color:var(--peligro);border-color:var(--peligro);background:transparent}.btn[disabled]{opacity:.5;cursor:not-allowed}
-.acciones{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;padding-top:14px;border-top:1px solid var(--linea)}.esp{flex:1}
-.tabla{overflow-x:auto;margin-bottom:14px}
-table{border-collapse:collapse;width:100%;font-size:.9rem}
-th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--linea);vertical-align:top}th{color:var(--suave);font-weight:500;white-space:nowrap}
-.venc{color:var(--peligro);font-weight:600}
-.punto{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:8px;vertical-align:-1px}
-.punto.on{background:#178046}.punto.off{background:var(--peligro)}
-.estado{white-space:nowrap;font-weight:600}
-.btn.rojo{background:var(--peligro);border-color:var(--peligro);color:#fff}.btn.rojo:hover{background:#b30c40;border-color:#b30c40}
-.btn.verde{background:#178046;border-color:#178046;color:#fff}.btn.verde:hover{background:#11663a;border-color:#11663a}
-details{margin-top:6px}summary{list-style:none;display:inline-flex}summary::-webkit-details-marker{display:none}
-details form{margin-top:12px}
-.pub{max-width:640px;margin:0 auto;padding:24px}.pub .avatar{width:120px;height:120px;font-size:3rem}
-dl{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;margin:16px 0}dt{color:var(--suave)}dd{margin:0}
-.ok{color:var(--pri);font-weight:600}
-.clave{position:relative}.clave input{padding-right:46px}
-.ojo{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:36px;height:36px;padding:0;display:grid;place-items:center;border:0;border-radius:6px;background:none;color:var(--pri);cursor:pointer}
-.ojo svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-/* Fuente "Patitas": solo reemplaza el símbolo con el que el navegador oculta la contraseña */
+.avatar{flex:none;border-radius:50%;overflow:hidden;background:var(--saas-pri-soft);color:var(--saas-pri-dark);display:grid;place-items:center;font:700 1rem "Bricolage Grotesque",sans-serif;width:92px;height:92px;font-size:2.2rem;border:3px solid #fff;box-shadow:0 4px 12px rgba(13,148,136,.18)}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.cab{display:flex;gap:18px;align-items:center;margin-bottom:18px;flex-wrap:wrap}.cab-t{display:grid;gap:6px;min-width:0}
+.pub{max-width:700px;margin:0 auto;padding:28px}.pub .avatar{width:108px;height:108px;font-size:2.6rem}
+.pub-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:18px 0 22px}
+.pub-stat{background:#f8fafc;border:1px solid var(--saas-border);border-radius:10px;padding:10px 14px}
+.pub-stat dt{font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:var(--saas-muted);font-weight:600;margin-bottom:2px}
+.pub-stat dd{margin:0;font-weight:700;color:var(--saas-ink);font-size:.95rem}
+.ok{color:var(--ok);font-weight:600}.venc{color:var(--err);font-weight:600}
+label{display:block;font-size:.83rem;font-weight:600;margin-bottom:4px;color:inherit}
+input,select,textarea{width:100%;font:inherit;color:inherit;background:#fff;border:1px solid var(--saas-border);border-radius:8px;padding:8px 11px;min-height:38px;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--saas-pri);box-shadow:0 0 0 3px rgba(13,148,136,.14)}
+textarea{min-height:78px;resize:vertical}
+input:disabled,select:disabled,textarea:disabled{background:#f1f5f9;color:#64748b;cursor:not-allowed}
+.btn{font:600 .88rem Figtree,sans-serif;min-height:38px;padding:0 14px;border-radius:8px;border:1px solid var(--saas-border);background:#fff;color:var(--saas-ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;transition:all .15s;white-space:nowrap}
+.btn:hover{border-color:#94a3b8;background:#f8fafc}
+.btn.pri{background:var(--saas-pri);border-color:var(--saas-pri);color:#fff;box-shadow:0 2px 6px rgba(13,148,136,.22)}.btn.pri:hover{background:var(--saas-pri-dark);border-color:var(--saas-pri-dark)}
+.btn.sec{background:var(--saas-sec);border-color:var(--saas-sec);color:#fff}.btn.sec:hover{background:#1d4ed8}
+.btn.pel{color:var(--err);border-color:#fecaca;background:#fff}.btn.pel:hover{background:var(--err-soft)}
+.btn.rojo{background:var(--err);border-color:var(--err);color:#fff}
+.btn.verde{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.sm{min-height:32px;padding:0 10px;font-size:.8rem}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+/* NFC Indicator Pill */
+.nfc-pill{display:inline-flex;align-items:center;gap:6px;padding:0 10px;height:32px;border-radius:99px;border:1px solid var(--saas-border);background:#f8fafc;color:var(--saas-muted);font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
+.nfc-pill:hover{border-color:#94a3b8}
+.nfc-pill.on{background:#dcfce7;border-color:#86efac;color:#15803d}
+.nfc-dot{width:8px;height:8px;border-radius:50%;background:#94a3b8}
+.nfc-pill.on .nfc-dot{background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.25)}
+
+.clave{position:relative}.clave input{padding-right:44px}
+.ojo{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:34px;height:34px;padding:0;display:grid;place-items:center;border:0;border-radius:6px;background:none;color:var(--saas-pri);cursor:pointer}
+.ojo svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 @font-face{font-family:Patitas;src:url(data:font/woff;base64,d09GRk9UVE8AAAL0AAkAAAAAAxgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAABDRkYgAAACEAAAANkAAADZXGRmUU9TLzIAAAFAAAAAMwAAAGDFgetTY21hcAAAAcQAAABAAAAAVEnhbRZoZWFkAAAA4AAAADYAAAA2L/luQmhoZWEAAAEYAAAAHgAAACQGQAJ4aG10eAAAAuwAAAAGAAAABgNQAABtYXhwAAABOAAAAAYAAAAGAAJQAG5hbWUAAAF0AAAATwAAAGBgfZalcG9zdAAAAgQAAAAMAAAAIAADAAAAAQAAAAEAANszsw5fDzz1AAMD6AAAAADm65UmAAAAAObrlSYAOwBpAtECrQAAAAMAAgAAAAAAAHicY2BkYGBW+G8BJHkYXBiMmG4xAEVQACMARNkCvwAAAABQAAACAAB4nGNgZuZhnMDAysDCQAA0gMmEBhjfHggYGBSU1FYzK/y3YGBgVmA4gaZFgYEBAPsjBoEAeJwliEEKwCAQA0crSC99Qd/Rd4g/2IOI4EnX/3dtExImAQIPji1H/HrLG0cOXDjtucw/e6M7iTaVmUtdXQYJQWkWYZIpVBbd1ngBR7QMEAB4nGNgYGBiYGBgBmIRIMkIplkYHIA0DwMHUI5FQUn5l+pp1fNqq///Z2BA5t2/f4f9ltkto5thYH1wAABPdhKheJxjYGbACwAAfQAEAQAEAQABAQEIUGF0aXRhcwABAQET+BwCxvT5ZflBBcQPi/dtEscRAAIBAQQLcGF3UGF0aXRhcwAAAAGHAAIBAQSY+aAO+aD48feiFeYr1fsL+wsrQTAw60H3C/cL69XmHvwl9xwVpr6ExGieaJ1ZcW9YcFiSUq54rnm9pae+CPci9zIVlcdywGSSZJFjX4JPgU+kVrKEsoWzt5THCPd6oRWCx2O3ZIVkhHJWlU+UT7NfspGykqTAgccI9xT7BBVvvlmlaHloeIRSplinWL1xrp2unpLEcL4IDgAAAAMMAAAARAAA) format("woff");unicode-range:U+2022,U+25CF,U+25CB,U+26AB,U+23FA;font-display:swap}
-input[type=password]{font-family:Patitas,Figtree,system-ui,sans-serif;font-size:1.15rem;color:var(--pri)}
-.ojo:hover{background:var(--ro)}
-dialog{border:1px solid var(--linea);border-radius:var(--r);background:var(--panel);color:var(--tinta);padding:24px;width:min(380px,92vw)}
-dialog::backdrop{background:rgba(0,0,0,.45)}dialog form{display:grid;gap:12px}
-.err{color:var(--peligro);font-size:.9rem;min-height:1.2em}
-#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--tinta);color:var(--panel);padding:11px 18px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:10}
-#toast.ver{opacity:1}#toast.error{background:var(--peligro);color:#fff}
-header.top{position:relative}
-#menu{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;flex:1;margin-left:16px}
-.hamb{display:none;width:46px;height:46px;place-items:center;border:1px solid var(--linea);border-radius:8px;background:var(--panel);color:var(--pri);cursor:pointer;padding:0}
-.hamb svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
-.hamb[aria-expanded=true] .h,.hamb[aria-expanded=false] .x{display:none}
-@media (min-width:721px){#menu.solo-movil{display:none}}
-@media (max-width:720px){
-  header.top{flex-wrap:nowrap}
-  .hamb{display:grid}
-  #menu{display:none;position:absolute;top:100%;left:0;right:0;z-index:20;margin:8px 0 0;padding:12px;flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:10px;background:var(--panel);border:1px solid var(--linea);border-radius:var(--r)}
-  #menu.abierto{display:flex}
-  #nav,#sesion{flex-direction:column;align-items:stretch;flex-wrap:nowrap}
-  #nav .btn,#sesion .btn{width:100%;justify-content:flex-start;min-height:48px}
-  #sesion .chip{padding:2px 4px}
-  #nav:not(:empty)+#sesion{border-top:1px solid var(--linea);padding-top:10px}
-}
-.portada{position:relative;display:grid;grid-template-columns:1.1fr .9fr;align-items:center;gap:8px;min-height:560px;padding:60px 8px 56px;overflow:hidden}
-.portada h1{font:800 clamp(2.8rem,8.4vw,6rem)/.92 Montserrat,"Bricolage Grotesque",sans-serif;letter-spacing:-.035em;margin:0}
-.portada h1 span{display:block}.t1{color:#fff}.t2{color:var(--acento)}.t3{color:var(--pri)}
-.portada .sub{font:400 clamp(1.1rem,2.4vw,1.5rem)/1.4 "Zilla Slab",Georgia,serif;margin:26px 0 22px;max-width:28ch}
-.portada .nota{font-size:.88rem;max-width:46ch;margin:16px 0 0}
+input[type=password]{font-family:Patitas,Figtree,system-ui,sans-serif;font-size:1.1rem;color:var(--saas-pri)}
+
+dialog{border:1px solid var(--saas-border);border-radius:14px;background:#fff;color:var(--saas-ink);padding:0;width:min(440px,94vw);box-shadow:0 20px 45px rgba(15,23,42,.22)}
+dialog.wide{width:min(760px,95vw)}
+dialog.xl{width:min(980px,96vw)}
+dialog::backdrop{background:rgba(15,23,42,.5);backdrop-filter:blur(2px)}
+.dlg-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--saas-border);background:#f8fafc;border-radius:14px 14px 0 0}
+.dlg-body{padding:20px;max-height:78vh;overflow-y:auto}
+.dlg-foot{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--saas-border);background:#f8fafc;border-radius:0 0 14px 14px}
+dialog form.simple-dlg{padding:24px;display:grid;gap:12px}
+.err{color:var(--err);font-size:.88rem;min-height:1.2em}
+#toast{position:fixed;right:20px;bottom:20px;background:#0f172a;color:#fff;padding:12px 18px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;transform:translateY(8px);max-width:90vw;z-index:9999;font-weight:500;box-shadow:0 10px 25px rgba(0,0,0,.2)}
+#toast.ver{opacity:1;transform:translateY(0)}#toast.error{background:var(--err)}
+
+.portada{position:relative;display:grid;grid-template-columns:1.1fr .9fr;align-items:center;gap:20px;min-height:540px;padding:48px 36px;background:rgba(255,255,255,.96);border:1px solid var(--saas-border);border-radius:20px;box-shadow:var(--shadow-md);overflow:hidden}
+.portada h1{font:800 clamp(2.6rem,7vw,5.2rem)/.94 Montserrat,"Bricolage Grotesque",sans-serif;letter-spacing:-.035em;margin:0}
+.portada h1 span{display:block}.t1{color:var(--saas-ink)}.t2{color:var(--saas-pri)}.t3{color:var(--saas-sec)}
+.portada .sub{font:400 clamp(1.08rem,2.2vw,1.38rem)/1.45 Figtree,sans-serif;color:var(--saas-muted);margin:22px 0 24px;max-width:34ch}
+.portada .nota{font-size:.86rem;color:var(--saas-muted);max-width:46ch;margin:18px 0 0}
 .portada .texto{position:relative;z-index:1}
-.btn.grande{min-height:50px;padding:0 30px;font-size:1.05rem}
-.portada-art{width:100%;height:auto;max-height:560px}
-.pt{position:absolute;left:0;top:0;width:min(250px,42vw);pointer-events:none}
-.onda{position:absolute;left:8px;bottom:10px;width:210px}
-@media (max-width:820px){.portada{grid-template-columns:1fr;padding-top:90px}.portada-art{max-width:400px;margin:8px auto 0}.onda{display:none}}
-@media (max-width:820px){.layout{grid-template-columns:1fr}#lista{max-height:220px}}
-@media (max-width:520px){.grid{grid-template-columns:1fr}.det{padding:14px}.avatar{width:72px;height:72px}}
-@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+.btn.grande{min-height:50px;padding:0 32px;font-size:1.05rem;border-radius:10px}
+.portada-art{width:100%;height:auto;max-height:500px;position:relative;z-index:1}
+.pt{position:absolute;left:0;top:0;width:min(250px,42vw);pointer-events:none;opacity:.55}
+.onda{position:absolute;left:28px;bottom:16px;width:210px;pointer-events:none}
+@media (max-width:820px){.portada{grid-template-columns:1fr;padding:36px 22px}.portada-art{max-width:360px;margin:8px auto 0}.onda{display:none}}
+
+/* ================= SAAS WORKSPACE & MENÚ HAMBURGUESA ================= */
+.saas-shell{display:flex;min-height:100vh}
+.sidebar{width:268px;background:var(--saas-sidebar);color:#cbd5e1;display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:50;transform:translateX(-100%);transition:transform .25s cubic-bezier(.4,0,.2,1);box-shadow:none}
+.sidebar.open{transform:translateX(0);box-shadow:0 20px 50px rgba(15,23,42,.38)}
+.sb-backdrop{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(1px);z-index:45}
+.sb-backdrop.open{display:block}
+.sb-brand{padding:16px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-logo{display:flex;align-items:center;gap:10px;color:#fff;font:800 1.25rem "Bricolage Grotesque",sans-serif;text-decoration:none}
+.sb-logo-badge{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#0d9488,#2563eb);display:grid;place-items:center;color:#fff;overflow:hidden;flex-shrink:0}
+.sb-logo-badge img{width:100%;height:100%;object-fit:contain;background:#fff;padding:2px}
+.sb-close{width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#cbd5e1;display:grid;place-items:center;cursor:pointer;transition:all .15s}
+.sb-close:hover{background:rgba(255,255,255,.16);color:#fff}
+.sb-clinic{padding:10px 20px;font-size:.76rem;color:#94a3b8;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-nav{flex:1;overflow-y:auto;padding:12px 10px}
+.sb-group{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b;padding:12px 12px 4px}
+.sb-item{width:100%;display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;border:0;background:transparent;color:#cbd5e1;font:500 .88rem Figtree,sans-serif;cursor:pointer;text-align:left;transition:all .15s;margin-bottom:2px}
+.sb-item:hover{background:var(--saas-sidebar-hover);color:#fff}
+.sb-item.active{background:var(--saas-sidebar-active);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(13,148,136,.35)}
+.sb-item svg{width:17px;height:17px;flex-shrink:0}
+.sb-badge{margin-left:auto;background:#ef4444;color:#fff;font-size:.7rem;font-weight:700;padding:1px 6px;border-radius:99px}
+.sb-footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.08);font-size:.8rem;color:#94a3b8;display:flex;align-items:center;gap:10px}
+
+.saas-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:62px;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--saas-border);padding:0 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:25}
+.tb-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.tb-burger{display:grid;place-items:center;background:#fff;border:1px solid var(--saas-border);border-radius:9px;width:38px;height:38px;cursor:pointer;color:var(--saas-ink);flex-shrink:0;transition:all .15s}
+.tb-burger:hover{background:#f1f5f9;border-color:#94a3b8}
+.tb-brand-mini{display:inline-flex;align-items:center;gap:8px;font:800 1.08rem "Bricolage Grotesque",sans-serif;color:var(--saas-ink);text-decoration:none;flex-shrink:0}
+.global-search{position:relative;max-width:340px;width:100%}
+.global-search input{padding-left:34px;background:#f8fafc;border-color:#e2e8f0;min-height:36px;font-size:.86rem}
+.global-search .gs-ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;display:grid}
+.gs-results{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border:1px solid var(--saas-border);border-radius:10px;box-shadow:var(--shadow-md);max-height:320px;overflow-y:auto;z-index:50}
+.gs-item{padding:9px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;border-bottom:1px solid #f1f5f9;font-size:.85rem}
+.gs-item:hover{background:#f8fafc}
+.tb-right{display:flex;align-items:center;gap:8px}
+.icon-btn{position:relative;width:38px;height:38px;border-radius:8px;border:1px solid var(--saas-border);background:#fff;display:grid;place-items:center;cursor:pointer;color:var(--saas-ink)}
+.icon-btn:hover{background:#f8fafc}
+.notif-dot{position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:#ef4444}
+.notif-pop{position:absolute;top:54px;right:22px;width:min(360px,92vw);background:#fff;border:1px solid var(--saas-border);border-radius:12px;box-shadow:var(--shadow-md);z-index:50;overflow:hidden}
+.user-pill{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 6px;border:1px solid var(--saas-border);border-radius:99px;background:#f8fafc;cursor:pointer;font-size:.83rem;font-weight:600}
+.user-ava{width:28px;height:28px;border-radius:50%;background:var(--saas-pri);color:#fff;display:grid;place-items:center;font-weight:700;font-size:.78rem;overflow:hidden;flex-shrink:0}
+.user-ava img{width:100%;height:100%;object-fit:cover}
+
+.sync-banner{background:#fef3c7;border-bottom:1px solid #fde68a;color:#92400e;padding:7px 22px;font-size:.82rem;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.workspace{padding:22px;max-width:1440px;width:100%;margin:0 auto}
+.page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.page-title{font-size:1.45rem;font-weight:700;color:var(--saas-ink)}
+.page-sub{font-size:.86rem;color:var(--saas-muted);margin-top:2px}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:20px}
+.kpi-card{background:#fff;border:1px solid var(--saas-border);border-radius:12px;padding:16px;box-shadow:var(--shadow-sm);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.kpi-label{font-size:.8rem;font-weight:600;color:var(--saas-muted)}
+.kpi-val{font:700 1.6rem "Bricolage Grotesque",sans-serif;color:var(--saas-ink);margin-top:4px}
+.kpi-foot{font-size:.75rem;color:var(--saas-muted);margin-top:4px}
+.kpi-ico{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;flex-shrink:0}
+
+.card{background:#fff;border:1px solid var(--saas-border);border-radius:12px;box-shadow:var(--shadow-sm);overflow:hidden}
+.card-head{padding:14px 18px;border-bottom:1px solid var(--saas-border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.card-title{font-size:1rem;font-weight:700}
+.card-body{padding:18px}
+.grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}
+.form-grid .full{grid-column:1/-1}
+
+.bg-swatch{width:28px;height:28px;border-radius:8px;border:2px solid #cbd5e1;cursor:pointer;transition:transform .12s,border-color .12s}
+.bg-swatch:hover{transform:scale(1.08);border-color:var(--saas-pri)}
+
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:.76rem;font-weight:600;white-space:nowrap}
+.b-ok{background:var(--ok-soft);color:var(--ok)}
+.b-warn{background:var(--warn-soft);color:var(--warn)}
+.b-err{background:var(--err-soft);color:var(--err)}
+.b-info{background:var(--saas-sec-soft);color:var(--saas-sec)}
+.b-teal{background:var(--saas-pri-soft);color:var(--saas-pri-dark)}
+.b-gray{background:#f1f5f9;color:#475569}
+
+.tbl-wrap{overflow-x:auto}
+table.saas-tbl{width:100%;border-collapse:collapse;font-size:.87rem}
+table.saas-tbl th{background:#f8fafc;color:var(--saas-muted);font-weight:600;text-align:left;padding:10px 14px;border-bottom:1px solid var(--saas-border);white-space:nowrap;font-size:.78rem;text-transform:uppercase;letter-spacing:.03em}
+table.saas-tbl td{padding:11px 14px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+table.saas-tbl tr:hover td{background:#f8fafc}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.toolbar input,.toolbar select{width:auto;min-width:190px}
+
+.tabs-bar{display:flex;gap:4px;border-bottom:1px solid var(--saas-border);margin-bottom:16px;overflow-x:auto}
+.tab-btn{padding:10px 14px;border:0;background:none;border-bottom:2px solid transparent;font:600 .86rem Figtree,sans-serif;color:var(--saas-muted);cursor:pointer;white-space:nowrap}
+.tab-btn.active{color:var(--saas-pri);border-bottom-color:var(--saas-pri)}
+
+.pet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(275px,1fr));gap:14px}
+.pet-card{background:#fff;border:1px solid var(--saas-border);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;transition:transform .15s,box-shadow .15s}
+.pet-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.pet-ava{width:54px;height:54px;border-radius:50%;background:var(--saas-pri-soft);color:var(--saas-pri-dark);display:grid;place-items:center;font:700 1.25rem "Bricolage Grotesque",sans-serif;overflow:hidden;flex-shrink:0}
+.pet-ava img{width:100%;height:100%;object-fit:cover}
+
+.timeline{position:relative;padding-left:24px;display:grid;gap:14px}
+.timeline::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:#e2e8f0}
+.tl-item{position:relative;background:#fff;border:1px solid var(--saas-border);border-radius:10px;padding:14px}
+.tl-dot{position:absolute;left:-22px;top:16px;width:12px;height:12px;border-radius:50%;background:var(--saas-pri);border:2px solid #fff;box-shadow:0 0 0 2px var(--saas-pri)}
+
+.pos-layout{display:grid;grid-template-columns:1.35fr .95fr;gap:18px;align-items:start}
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px}
+.prod-tile{border:1px solid var(--saas-border);border-radius:10px;padding:12px;background:#fff;cursor:pointer;text-align:left;transition:all .15s;display:flex;flex-direction:column;justify-content:space-between;gap:6px}
+.prod-tile:hover{border-color:var(--saas-pri);box-shadow:var(--shadow-sm)}
+
+@media (max-width:960px){
+  .pos-layout,.grid-2,.grid-3{grid-template-columns:1fr}
+  .hide-sm{display:none}
+}
+@media (max-width:600px){
+  .form-grid{grid-template-columns:1fr}
+  .workspace{padding:14px}
+}
+@media print{
+  .sidebar,.topbar,.no-print,#toast,.sync-banner,.sb-backdrop{display:none!important}
+  .saas-main,.workspace{padding:0!important;margin:0!important;max-width:100%!important}
+  body{background:#fff!important}
+}
 </style>
 </head>
 <body>
-<div class="app">
-  <header class="top">
-    <a class="marca" href="./">VEXAVET<small>Carnet digital</small></a>
-    <button type="button" class="hamb" id="b-menu" aria-label="Menú" aria-controls="menu" aria-expanded="false">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path class="h" d="M4 7h16M4 12h16M4 17h16"/><path class="x" d="M6 6l12 12M18 6L6 18"/></svg>
-    </button>
-    <div id="menu">
-      <nav id="nav" aria-label="Secciones"></nav>
-      <div id="sesion"></div>
-    </div>
-  </header>
-  <main id="app"></main>
-</div>
+<div id="root"></div>
 
 <dialog id="dlg">
-  <form id="fl">
-    <h2>Iniciar sesión</h2>
+  <form id="fl" class="simple-dlg">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span id="dlg-login-logo"></span>
+      <div>
+        <h2 style="font-size:1.25rem">Iniciar sesión</h2>
+        <div style="font-size:.8rem;color:var(--saas-muted)">Acceso clínico y administrativo</div>
+      </div>
+    </div>
     <div><label for="l-mail">Usuario</label><input id="l-mail" autocomplete="username" autocapitalize="none" required></div>
     <div><label for="l-pass">Contraseña</label><input id="l-pass" type="password" autocomplete="current-password" required></div>
     <div class="err" id="l-err" role="alert"></div>
-    <div class="fila"><button class="btn pri" id="l-ok">Entrar</button><button type="button" class="btn" id="l-x">Cancelar</button></div>
+    <div class="fila" style="justify-content:flex-end;margin-top:4px"><button type="button" class="btn" id="l-x">Cancelar</button><button class="btn pri" id="l-ok">Entrar</button></div>
   </form>
 </dialog>
+
 <dialog id="dlg-editar">
-  <form id="fe">
+  <form id="fe" class="simple-dlg">
     <h2>Editar usuario</h2>
+    <div style="display:flex;align-items:center;gap:14px;padding:10px;background:#f8fafc;border:1px solid var(--saas-border);border-radius:10px">
+      <div class="pet-ava" id="eu-ava-prev" style="width:56px;height:56px;font-size:1.2rem">U</div>
+      <div style="display:grid;gap:6px">
+        <input type="file" id="eu-foto-file" accept="image/jpeg,image/png,image/webp" hidden>
+        <div class="fila">
+          <button type="button" class="btn sm" onclick="$('eu-foto-file').click()"><i data-lucide="camera"></i> Cambiar foto</button>
+          <button type="button" class="btn sm pel" id="eu-foto-del" hidden>Eliminar foto</button>
+        </div>
+        <span style="font-size:.75rem;color:var(--saas-muted)">JPG, PNG o WebP</span>
+      </div>
+    </div>
     <div><label for="e-u">Usuario</label><input id="e-u" required pattern="[a-zA-Z0-9._-]{3,30}" autocapitalize="none"></div>
     <div><label for="e-n">Nombre</label><input id="e-n" required></div>
     <div><label for="e-r">Rol</label><select id="e-r"></select></div>
     <div><label for="e-p">Nueva contraseña (opcional)</label><input id="e-p" type="password" minlength="6" autocomplete="new-password"></div>
-    <p class="chip" style="margin:0">Las contraseñas actuales no se pueden consultar porque se guardan cifradas. Si el usuario la olvidó, escribe una nueva aquí.</p>
-    <div class="fila"><button class="btn pri">Guardar cambios</button><button type="button" class="btn" id="e-x">Cancelar</button></div>
+    <p style="font-size:.82rem;color:#64748b;margin:0">Las contraseñas actuales se guardan cifradas. Si el usuario la olvidó, escribe una nueva aquí.</p>
+    <div class="fila" style="justify-content:flex-end"><button type="button" class="btn" id="e-x">Cancelar</button><button class="btn pri">Guardar cambios</button></div>
   </form>
 </dialog>
+
 <dialog id="dlg-cuenta">
-  <h2>Mi cuenta</h2>
-  <form id="fc-n" style="margin-top:12px">
-    <div><label for="c-user">Usuario</label><input id="c-user" disabled></div>
-    <div><label for="c-nombre">Nombre de usuario</label><input id="c-nombre" required disabled></div>
-    <div class="fila"><button class="btn pri chico" id="c-gn" hidden>Guardar</button></div>
-  </form>
-  <form id="fc-p" style="margin-top:18px;border-top:1px solid var(--linea);padding-top:16px">
-    <h3>Cambiar contraseña</h3>
-    <div><label for="c-act">Contraseña actual</label><input id="c-act" type="password" autocomplete="current-password" disabled></div>
-    <div><label for="c-new">Nueva contraseña (mín. 6)</label><input id="c-new" type="password" autocomplete="new-password" disabled></div>
-    <div class="fila"><button class="btn pri chico" id="c-gp" hidden>Guardar contraseña</button></div>
-  </form>
-  <div class="fila" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--linea)"><button type="button" class="btn pri" id="c-ed">Editar perfil</button><button type="button" class="btn" id="c-x">Cerrar</button></div>
+  <div class="dlg-head"><h3>Mi cuenta</h3><button type="button" class="btn sm" id="c-x">Cerrar</button></div>
+  <div class="dlg-body">
+    <div style="display:flex;align-items:center;gap:14px;padding:12px;background:#f8fafc;border:1px solid var(--saas-border);border-radius:10px;margin-bottom:14px">
+      <div class="pet-ava" id="c-ava-prev" style="width:64px;height:64px;font-size:1.4rem">U</div>
+      <div style="display:grid;gap:6px">
+        <strong style="font-size:.9rem">Foto de perfil</strong>
+        <input type="file" id="c-foto-file" accept="image/jpeg,image/png,image/webp" hidden>
+        <div class="fila">
+          <button type="button" class="btn sm" id="c-foto-up"><i data-lucide="camera"></i> Subir / Cambiar foto</button>
+          <button type="button" class="btn sm pel" id="c-foto-del" hidden>Eliminar foto</button>
+        </div>
+      </div>
+    </div>
+    <form id="fc-n" style="display:grid;gap:10px">
+      <div><label for="c-user">Usuario</label><input id="c-user" disabled></div>
+      <div><label for="c-nombre">Nombre visible</label><input id="c-nombre" required disabled></div>
+      <div class="fila"><button class="btn pri sm" id="c-gn" hidden>Guardar nombre</button></div>
+    </form>
+    <form id="fc-p" style="margin-top:16px;border-top:1px solid #e2e8f0;padding-top:14px;display:grid;gap:10px">
+      <h4>Cambiar contraseña</h4>
+      <div><label for="c-act">Contraseña actual</label><input id="c-act" type="password" autocomplete="current-password" disabled></div>
+      <div><label for="c-new">Nueva contraseña (mín. 6)</label><input id="c-new" type="password" autocomplete="new-password" disabled></div>
+      <div class="fila"><button class="btn pri sm" id="c-gp" hidden>Actualizar contraseña</button></div>
+    </form>
+  </div>
+  <div class="dlg-foot"><button type="button" class="btn pri" id="c-ed">Editar perfil</button></div>
 </dialog>
+
+<dialog id="dlg-saas">
+  <div class="dlg-head"><h3 id="ds-title">Modal</h3><button type="button" class="btn sm" id="ds-close">✕</button></div>
+  <div class="dlg-body" id="ds-body"></div>
+  <div class="dlg-foot" id="ds-foot"></div>
+</dialog>
+
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
-/* ============ CONFIGURACIÓN ============ */
+/* ============ CONFIGURACIÓN SUPABASE ============ */
 const SUPABASE_URL = "https://ygszxwuyausdpmpejpwu.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlnc3p4d3V5YXVzZHBtcGVqcHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4NTU3MzAsImV4cCI6MjEwNjQzMTczMH0.F4QkVCP_kbiOLGFr0UzaLQrsBbgGVF-7e6mL3tNcC90";
-const ROL_ADMIN = "administrador", ROL_VET = "veterinario";   // deben coincidir con la columna perfiles.rol
-/* ======================================= */
+const ROL_ADMIN = "administrador", ROL_VET = "veterinario";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const BUCKET = "fotos-mascotas";
+
+/* ============ UTILIDADES ============ */
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const fecha = d => d ? new Date(d.length > 10 ? d : d + "T00:00:00").toLocaleDateString("es-EC") : "—";
 const hoy = () => new Date().toISOString().slice(0, 10);
+const fecha = d => {
+  if (!d) return "—";
+  const dt = new Date(d.length > 10 ? d : d + "T00:00:00");
+  return isNaN(dt) ? d : dt.toLocaleDateString("es-EC");
+};
+const fechaHora = d => {
+  if (!d) return "—";
+  const dt = new Date(d);
+  return isNaN(dt) ? d : dt.toLocaleString("es-EC", {dateStyle:"short", timeStyle:"short"});
+};
+const money = n => (state.config?.moneda || "$") + Number(n || 0).toFixed(2);
+const edad = f => {
+  if (!f) return "—";
+  const d = new Date(f), n = new Date();
+  let m = (n.getFullYear() - d.getFullYear()) * 12 + n.getMonth() - d.getMonth();
+  if (n.getDate() < d.getDate()) m--;
+  if (m < 0) return "Recién nacido";
+  return m >= 12 ? Math.floor(m / 12) + " años" + (m % 12 ? " " + (m % 12) + " m" : "") : m + " meses";
+};
+const avatarHTML = (url, nombre) => url ? `<img src="${esc(url)}" alt="${esc(nombre)}">` : esc((nombre || "?")[0].toUpperCase());
 const params = new URLSearchParams(location.search);
 let publicId = params.get("m"), forzarPublico = params.get("vista") === "publica";
 const enlace = id => location.origin + location.pathname + "?m=" + id;
 const isAdmin = () => perfil?.rol === ROL_ADMIN;
 
-let perfil = null, mascotas = [], selId = null, tab = "datos", vista = "mascotas", nueva = false, editando = false;
-let fotoArchivo = null, fotoPrev = null, fotoQuitada = false;
+/* ============ SOPORTE LECTOR NFC ACR122U-A9 ============ */
+const NFC_BRIDGE_URL = "http://localhost:18923/";
+const normalizeNfcUid = raw => String(raw ?? "").trim().toUpperCase().replace(/[^0-9A-F]/g, "");
+function getLocalNfcMap(){
+  try { return JSON.parse(localStorage.getItem("vx_nfc_map") || "{}"); } catch { return {}; }
+}
+function saveLocalNfcMap(uid, petId){
+  const map = getLocalNfcMap();
+  Object.keys(map).forEach(k => { if (map[k] === petId) delete map[k]; });
+  if (uid && petId) map[normalizeNfcUid(uid)] = petId;
+  localStorage.setItem("vx_nfc_map", JSON.stringify(map));
+}
+function getPetNfcUid(m){
+  if (!m) return "";
+  if (m.nfc_uid) return normalizeNfcUid(m.nfc_uid);
+  const map = getLocalNfcMap();
+  const found = Object.entries(map).find(([, pid]) => String(pid) === String(m.id));
+  return found ? found[0] : "";
+}
 
-const CAMPOS = [
-  ["nombre","Nombre *","text"],["especie","Especie","sel",["Perro","Gato","Ave","Conejo","Roedor","Reptil","Otra"]],
-  ["raza","Raza","text"],["sexo","Sexo","sel",["","Macho","Hembra"]],
-  ["fecha_nacimiento","Fecha de nacimiento","date"],["peso_kg","Peso (kg)","number"],
-  ["color","Color","text"],["microchip","Microchip","text"],
-  ["esterilizado","Esterilizado","check"],["vacunas_al_dia","Vacunas al día","check"],
-  ["alergias","Alergias","text"],["duenio_nombre","Dueño · nombre","text"],["duenio_telefono","Dueño · teléfono","tel"],
-  ["duenio_email","Dueño · correo","email"],["duenio_direccion","Dueño · dirección","text"],["notas","Observaciones","area"]
-];
-const CLIN = {
-  vacunas:{t:"Vacunas",o:"fecha",c:[["vacuna","Vacuna","text",1],["fecha","Fecha","date",1],["proxima_dosis","Próxima dosis","date"],["lote","Lote","text"],["veterinario","Veterinario","text"]]},
-  consultas:{t:"Consultas",o:"fecha",c:[["fecha","Fecha","date",1],["motivo","Motivo","text",1],["diagnostico","Diagnóstico","text"],["tratamiento","Tratamiento","text"],["temperatura_c","Temp. °C","number"],["frecuencia_cardiaca","FC (lpm)","number"],["peso_kg","Peso kg","number"],["veterinario","Veterinario","text"]]},
-  desparasitaciones:{t:"Desparasitación",o:"fecha",c:[["tipo","Tipo","text",1],["producto","Producto","text",1],["fecha","Fecha","date",1],["proxima_dosis","Próxima dosis","date"],["peso_kg","Peso kg","number"]]},
-  cirugias:{t:"Cirugías",o:"fecha",c:[["fecha","Fecha","date",1],["procedimiento","Procedimiento","text",1],["anestesia","Anestesia","text"],["veterinario","Veterinario","text"],["observaciones","Observaciones","text"]]},
-  examenes:{t:"Exámenes",o:"fecha",c:[["fecha","Fecha","date",1],["tipo","Tipo","text",1],["laboratorio","Laboratorio","text"],["resultado","Resultado","text"]]},
-  medicacion:{t:"Medicación",o:"fecha_inicio",c:[["medicamento","Medicamento","text",1],["dosis","Dosis","text"],["frecuencia","Frecuencia","text"],["fecha_inicio","Inicio","date",1],["fecha_fin","Fin","date"],["indicaciones","Indicaciones","text"]]}
+const nfcState = {
+  connected: false,
+  reader: "",
+  initialized: false,
+  lastSeq: 0,
+  lastUid: "",
+  lastError: "",
+  polling: false
 };
+
+function updateNfcIndicators(){
+  document.querySelectorAll("[data-nfc-status]").forEach(el => {
+    el.classList.toggle("on", nfcState.connected);
+    const lbl = el.querySelector("[data-nfc-label]");
+    if (lbl){
+      lbl.textContent = nfcState.connected
+        ? (nfcState.reader ? "NFC Activo" : "Puente NFC · Sin lector")
+        : "Conectar NFC";
+    }
+  });
+}
+
+function downloadNfcBridgeScript(){
+  const batContent = [
+    '@echo off',
+    'chcp 65001 >nul',
+    'title VEXAVET - Lector NFC ACR122U-A9',
+    'color 0B',
+    'echo ====================================================',
+    'echo   VEXAVET - Puente Lector NFC ACR122U-A9 (Windows)',
+    'echo ====================================================',
+    'echo Iniciando servicio local en http://localhost:18923 ...',
+    'set "BAT_PATH=%~f0"',
+    'powershell -NoProfile -ExecutionPolicy Bypass -Command "$code = [System.IO.File]::ReadAllText($env:BAT_PATH, [System.Text.Encoding]::UTF8) -split (\'#__PS_\' + \'START__\'); Invoke-Expression $code[1]"',
+    'pause',
+    'exit /b',
+    '',
+    '#__PS_START__',
+    'Add-Type -TypeDefinition @"',
+    'using System;',
+    'using System.Runtime.InteropServices;',
+    'public class PcScReader {',
+    '    [StructLayout(LayoutKind.Sequential)]',
+    '    public struct SCARD_IO_REQUEST { public uint dwProtocol; public uint cbPciLength; }',
+    '    [DllImport("winscard.dll")] public static extern uint SCardEstablishContext(uint dwScope, IntPtr pvReserved1, IntPtr pvReserved2, out IntPtr phContext);',
+    '    [DllImport("winscard.dll")] public static extern uint SCardReleaseContext(IntPtr hContext);',
+    '    [DllImport("winscard.dll", CharSet = CharSet.Unicode)] public static extern uint SCardListReaders(IntPtr hContext, string mszGroups, char[] mszReaders, ref uint pcchReaders);',
+    '    [DllImport("winscard.dll", CharSet = CharSet.Unicode)] public static extern uint SCardConnect(IntPtr hContext, string szReader, uint dwShareMode, uint dwPreferredProtocols, out IntPtr phCard, out uint pdwActiveProtocol);',
+    '    [DllImport("winscard.dll")] public static extern uint SCardDisconnect(IntPtr hCard, uint dwDisposition);',
+    '    [DllImport("winscard.dll")] public static extern uint SCardTransmit(IntPtr hCard, ref SCARD_IO_REQUEST pioSendPci, byte[] pbSendBuffer, uint cbSendLength, IntPtr pioRecvPci, byte[] pbRecvBuffer, ref uint pcbRecvLength);',
+    '    public static string GetFirstReader(IntPtr ctx) {',
+    '        uint len = 0; uint ret = SCardListReaders(ctx, null, null, ref len);',
+    '        if (ret != 0 || len <= 2) return null;',
+    '        char[] buf = new char[len]; ret = SCardListReaders(ctx, null, buf, ref len);',
+    '        if (ret != 0) return null;',
+    '        string[] parts = (new string(buf)).Split(new char[] { \'\\0\' }, StringSplitOptions.RemoveEmptyEntries);',
+    '        return parts.Length > 0 ? parts[0] : null;',
+    '    }',
+    '    public static string ReadCardUid(IntPtr ctx, string reader) {',
+    '        IntPtr card; uint proto;',
+    '        if (SCardConnect(ctx, reader, 2, 3, out card, out proto) != 0) return null;',
+    '        try {',
+    '            SCARD_IO_REQUEST pci = new SCARD_IO_REQUEST(); pci.dwProtocol = proto; pci.cbPciLength = (uint)Marshal.SizeOf(typeof(SCARD_IO_REQUEST));',
+    '            byte[] cmd = new byte[] { 0xFF, 0xCA, 0x00, 0x00, 0x00 }; byte[] recv = new byte[258]; uint recvLen = (uint)recv.Length;',
+    '            uint ret = SCardTransmit(card, ref pci, cmd, (uint)cmd.Length, IntPtr.Zero, recv, ref recvLen);',
+    '            if (ret == 0 && recvLen >= 2 && recv[recvLen - 2] == 0x90 && recv[recvLen - 1] == 0x00) {',
+    '                return BitConverter.ToString(recv, 0, (int)recvLen - 2).Replace("-", "");',
+    '            }',
+    '            return null;',
+    '        } finally { SCardDisconnect(card, 0); }',
+    '    }',
+    '}',
+    '"@',
+    '$ctx = [IntPtr]::Zero',
+    '[PcScReader]::SCardEstablishContext(0, [IntPtr]::Zero, [IntPtr]::Zero, [ref]$ctx) | Out-Null',
+    '$listener = New-Object System.Net.HttpListener',
+    '$listener.Prefixes.Add("http://localhost:18923/")',
+    '$listener.Start()',
+    'Write-Host "Servidor NFC escuchando correctamente. Puedes minimizar esta ventana." -ForegroundColor Green',
+    '$lastUid = ""; $scanSeq = 0; $cardPresent = $false; $lastReader = ""; $browserLinked = $false; $pending = $null',
+    'try {',
+    '    while ($listener.IsListening) {',
+    '        $reader = [PcScReader]::GetFirstReader($ctx)',
+    '        if ($reader -ne $lastReader) {',
+    '            $lastReader = $reader',
+    '            if ($reader) { Write-Host "[OK] Lector detectado: $reader" -ForegroundColor Cyan }',
+    '            else { Write-Host "[!] Esperando conexion del lector ACR122U..." -ForegroundColor Yellow }',
+    '        }',
+    '        if ($reader) {',
+    '            $uid = [PcScReader]::ReadCardUid($ctx, $reader)',
+    '            if ($uid) {',
+    '                if (-not $cardPresent) {',
+    '                    $cardPresent = $true; $lastUid = $uid; $scanSeq++',
+    '                    $hora = (Get-Date).ToString("HH:mm:ss")',
+    '                    Write-Host "[$hora] Tarjeta NFC leida -> UID: $uid" -ForegroundColor Green',
+    '                    try { [Console]::Beep(1400, 90) } catch {}',
+    '                }',
+    '            } else { $cardPresent = $false }',
+    '        }',
+    '        $waitMs = 100',
+    '        while ($true) {',
+    '            if ($null -eq $pending) { $pending = $listener.BeginGetContext($null, $null) }',
+    '            if (-not $pending.AsyncWaitHandle.WaitOne($waitMs)) { break }',
+    '            $waitMs = 0',
+    '            $context = $listener.EndGetContext($pending); $pending = $null',
+    '            $req = $context.Request; $res = $context.Response',
+    '            $origin = $req.Headers["Origin"]',
+    '            if ($origin) { $res.Headers.Add("Access-Control-Allow-Origin", $origin); $res.Headers.Add("Vary", "Origin") }',
+    '            else { $res.Headers.Add("Access-Control-Allow-Origin", "*") }',
+    '            $res.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS")',
+    '            $res.Headers.Add("Access-Control-Allow-Headers", "*")',
+    '            $res.Headers.Add("Access-Control-Allow-Private-Network", "true")',
+    '            $res.Headers.Add("Access-Control-Max-Age", "86400")',
+    '            if (-not $browserLinked) { $browserLinked = $true; Write-Host "[OK] Navegador VEXAVET conectado al puente NFC." -ForegroundColor Magenta }',
+    '            if ($req.HttpMethod -eq "OPTIONS") { $res.StatusCode = 204; $res.Close() }',
+    '            else {',
+    '                $json = @{ ok = $true; reader = [string]$reader; uid = $lastUid; seq = $scanSeq } | ConvertTo-Json -Compress',
+    '                $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)',
+    '                $res.ContentType = "application/json; charset=utf-8"',
+    '                $res.ContentLength64 = $bytes.Length',
+    '                $res.OutputStream.Write($bytes, 0, $bytes.Length)',
+    '                $res.Close()',
+    '            }',
+    '        }',
+    '    }',
+    '} finally { $listener.Stop(); if ($ctx -ne [IntPtr]::Zero) { [PcScReader]::SCardReleaseContext($ctx) | Out-Null } }'
+  ].join("\r\n");
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([batContent], { type: "application/bat" }));
+  a.download = "VEXAVET_Lector_NFC.bat";
+  a.click();
+  toast("Descargado VEXAVET_Lector_NFC.bat. Haz doble clic sobre él en Windows.");
+}
+
+function openNfcSetupModal(){
+  openModal({
+    title: "Lector NFC USB (ACR122U-A9)",
+    size: "wide",
+    bodyHTML: `
+      <div style="display:grid;gap:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;background:${nfcState.connected?"#dcfce7":"#f8fafc"};border:1px solid ${nfcState.connected?"#86efac":"#e2e8f0"}">
+          <div>
+            <strong>Estado actual: ${nfcState.connected ? "Conectado a VEXAVET" : "Esperando puente local en Windows"}</strong>
+            <div style="font-size:.82rem;color:#475569">${nfcState.reader ? `Lector: ${esc(nfcState.reader)}` : "Conecta el ACR122U-A9 por USB y ejecuta el puente en Windows."}</div>
+          </div>
+          <span class="badge ${nfcState.connected?"b-ok":"b-warn"}">${nfcState.connected ? "En línea" : "Sin conexión"}</span>
+        </div>
+
+        ${!nfcState.connected ? `<div style="padding:10px 12px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;font-size:.82rem;color:#92400e">
+          Si el archivo <code>.bat</code> ya está abierto en Windows y aquí sigue en "Sin conexión", verifica si tu navegador bloquea conexiones locales (por ejemplo, desactiva <em>Brave Shields</em> para este sitio o permite el acceso a red local en Chrome/Edge).
+        </div>` : ""}
+
+        <div style="font-size:.9rem;line-height:1.55">
+          <p style="margin:0 0 8px"><strong>¿Cómo conectar tu ACR122U-A9 en 2 pasos?</strong></p>
+          <ol style="margin:0;padding-left:20px;display:grid;gap:6px">
+            <li>Descarga el archivo puente nativo para Windows:<br>
+              <button type="button" class="btn pri sm" style="margin-top:6px" onclick="downloadNfcBridgeScript()"><i data-lucide="download"></i> Descargar VEXAVET_Lector_NFC.bat</button>
+            </li>
+            <li>Haz <strong>doble clic</strong> sobre <code>VEXAVET_Lector_NFC.bat</code> y déjalo minimizado mientras usas la computadora. El indicador superior cambiará automáticamente a <strong>NFC Activo</strong>.</li>
+          </ol>
+        </div>
+
+        <div style="padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;font-size:.83rem;color:#475569">
+          <strong>Comportamiento automático al acercar una tarjeta:</strong>
+          <ul style="margin:6px 0 0;padding-left:18px">
+            <li><strong>Con sesión iniciada:</strong> abre directamente la <em>Historia Clínica completa</em> de la mascota (o permite vincular la tarjeta si aún es nueva).</li>
+            <li><strong>Sin sesión iniciada:</strong> abre directamente el <em>Carnet Digital Público</em> de la mascota.</li>
+          </ul>
+        </div>
+      </div>
+    `
+  });
+}
+
+async function resolvePetIdByNfc(uid){
+  const norm = normalizeNfcUid(uid);
+  if (!norm) return null;
+
+  if (perfil && state.mascotas.length){
+    const localPet = state.mascotas.find(m => getPetNfcUid(m) === norm);
+    if (localPet) return localPet.id;
+  }
+
+  try {
+    const { data, error } = await sb.rpc("mascota_por_nfc", { p_uid: norm });
+    if (!error && data) return data;
+  } catch {}
+
+  try {
+    const { data } = await sb.from("mascotas").select("id").eq("nfc_uid", norm).maybeSingle();
+    if (data?.id) return data.id;
+  } catch {}
+
+  return getLocalNfcMap()[norm] || null;
+}
+
+async function handleNfcScan(rawUid){
+  const uid = normalizeNfcUid(rawUid);
+  if (!uid) return;
+
+  const modalInput = $("pm-nfc-uid");
+  if (modalInput && $("dlg-saas")?.open){
+    const editingId = modalInput.dataset.petId || "";
+    const ownerPet = state.mascotas.find(m => getPetNfcUid(m) === uid && String(m.id) !== String(editingId));
+    if (ownerPet){
+      toast(`Esta tarjeta ya pertenece a ${ownerPet.nombre}. Cada tarjeta es única por mascota.`, true);
+      return;
+    }
+    modalInput.value = uid;
+    const box = modalInput.closest(".full");
+    if (box){
+      box.style.background = "#f0fdf4";
+      box.style.borderColor = "#16a34a";
+    }
+    toast(`Tarjeta leída (${uid}). Pulsa "Guardar Paciente" para confirmar.`);
+    return;
+  }
+
+  if (perfil){
+    let pet = state.mascotas.find(m => getPetNfcUid(m) === uid);
+    if (!pet){
+      const petId = await resolvePetIdByNfc(uid);
+      if (petId) pet = state.mascotas.find(m => String(m.id) === String(petId));
+    }
+
+    if (pet){
+      closeModal();
+      toast(`Tarjeta NFC · Abriendo historia clínica de ${pet.nombre}`);
+      navTo("historia", pet.id);
+      return;
+    }
+
+    openModal({
+      title: "Tarjeta NFC Nueva Detectada",
+      bodyHTML: `
+        <div style="display:grid;gap:12px">
+          <p style="margin:0">Se leyó la tarjeta NFC con código único <span class="badge b-teal">${esc(uid)}</span>, pero todavía no está asociada a ninguna mascota.</p>
+          <div>
+            <label>Asignar rápidamente a una mascota existente:</label>
+            <select id="nfc-assign-pet">
+              <option value="">Seleccionar mascota…</option>
+              ${state.mascotas.map(m => `<option value="${m.id}">${esc(m.nombre)} (${esc(m.duenio_nombre || "Sin dueño")})</option>`).join("")}
+            </select>
+          </div>
+        </div>
+      `,
+      footHTML: `
+        <button type="button" class="btn" onclick="closeModal()">Cancelar</button>
+        <button type="button" class="btn sec" onclick="closeModal();openMascotaModal(null,'${uid}')">Nueva Mascota</button>
+        <button type="button" class="btn pri" id="nfc-assign-btn">Vincular Tarjeta</button>
+      `
+    });
+    $("nfc-assign-btn").onclick = async () => {
+      const pid = $("nfc-assign-pet").value;
+      if (!pid) return toast("Selecciona una mascota de la lista.", true);
+      saveLocalNfcMap(uid, pid);
+      try { await db.update("mascotas", pid, { nfc_uid: uid }); } catch {}
+      log("Vinculó tarjeta NFC", "mascotas", uid);
+      closeModal();
+      await syncAllData();
+      toast("Tarjeta NFC vinculada correctamente.");
+      navTo("historia", pid);
+    };
+    return;
+  }
+
+  const petId = await resolvePetIdByNfc(uid);
+  if (petId){
+    if ($("dlg")?.open) $("dlg").close();
+    publicId = petId;
+    forzarPublico = true;
+    try { history.replaceState(null, "", "?m=" + encodeURIComponent(petId)); } catch {}
+    toast("Tarjeta NFC detectada · Abriendo carnet público");
+    pintarPublico();
+  } else {
+    toast(`Tarjeta NFC (${uid}) aún no vinculada a ninguna mascota.`, true);
+  }
+}
+
+function startNfcBridge(){
+  if (nfcState.polling) return;
+  nfcState.polling = true;
+
+  const poll = async () => {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 2000);
+      const res = await fetch(NFC_BRIDGE_URL + "?_t=" + Date.now(), { signal: ctrl.signal });
+      clearTimeout(t);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      const wasConnected = nfcState.connected;
+      const oldReader = nfcState.reader;
+      nfcState.connected = Boolean(data.ok);
+      nfcState.reader = data.reader || "";
+      nfcState.lastError = "";
+
+      if (!wasConnected || oldReader !== nfcState.reader) updateNfcIndicators();
+
+      const seq = Number(data.seq || 0);
+      if (!nfcState.initialized){
+        nfcState.initialized = true;
+        nfcState.lastSeq = seq;
+        nfcState.lastUid = data.uid || "";
+      } else if (seq > nfcState.lastSeq && data.uid){
+        nfcState.lastSeq = seq;
+        nfcState.lastUid = data.uid;
+        handleNfcScan(data.uid);
+      }
+    } catch (err) {
+      nfcState.lastError = err?.message || "Sin conexión";
+      if (nfcState.connected){
+        nfcState.connected = false;
+        nfcState.reader = "";
+        updateNfcIndicators();
+      }
+    } finally {
+      setTimeout(poll, 350);
+    }
+  };
+
+  poll();
+
+  let kBuf = "", kLast = 0;
+  document.addEventListener("keydown", e => {
+    const tag = (document.activeElement?.tagName || "").toUpperCase();
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    const now = Date.now();
+    if (now - kLast > 80) kBuf = "";
+    kLast = now;
+    if (e.key === "Enter"){
+      const clean = normalizeNfcUid(kBuf);
+      kBuf = "";
+      if (clean.length >= 8 && clean.length <= 20) handleNfcScan(clean);
+    } else if (/^[0-9a-fA-F:]$/.test(e.key)){
+      kBuf += e.key;
+    }
+  });
+}
+
+/* ============ BRANDING, ICONO DE PÁGINA, FONDO Y AVATARES ============ */
+const DEFAULT_FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230d9488'/%3E%3Cpath d='M12 34h10l5-12 9 24 6-14h10' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E";
+
+function getLocalAvatars(){
+  try { return JSON.parse(localStorage.getItem("vx_user_avatars") || "{}"); } catch { return {}; }
+}
+function setLocalUserAvatar(userId, url){
+  const map = getLocalAvatars();
+  if (url) map[userId] = url;
+  else delete map[userId];
+  localStorage.setItem("vx_user_avatars", JSON.stringify(map));
+}
+function getUserFoto(u){
+  if (!u) return "";
+  return u.foto_url || getLocalAvatars()[u.id] || "";
+}
+function userAvatarHTML(u){
+  const url = getUserFoto(u);
+  const name = u?.nombre || u?.usuario || "U";
+  return url ? `<img src="${esc(url)}" alt="${esc(name)}">` : esc(name[0].toUpperCase());
+}
+function getBrandLogoUrl(){
+  return state.config?.logo_url || localStorage.getItem("vx_logo_url") || "";
+}
+function getPageIconUrl(){
+  return state.config?.favicon_url || localStorage.getItem("vx_favicon_url") || "";
+}
+function getCustomBg(){
+  return state.config?.custom_bg || localStorage.getItem("vx_custom_bg") || "";
+}
+function applyCustomAppearance(){
+  const fav = getPageIconUrl();
+  const link = $("app-favicon");
+  if (link) link.href = fav || DEFAULT_FAVICON;
+
+  const bg = getCustomBg();
+  if (bg){
+    if (/^(https?:\/\/|data:image)/i.test(bg)){
+      document.body.style.background = `url("${bg}") center / cover fixed no-repeat`;
+    } else {
+      document.body.style.background = bg;
+    }
+  } else {
+    document.body.style.background = "";
+  }
+}
+function brandBadgeHTML(size = 34){
+  const logo = getBrandLogoUrl();
+  if (logo){
+    return `<span class="sb-logo-badge" style="width:${size}px;height:${size}px"><img src="${esc(logo)}" alt="Logo VEXAVET"></span>`;
+  }
+  return `<span class="sb-logo-badge" style="width:${size}px;height:${size}px"><i data-lucide="heart-pulse" style="width:${Math.round(size*0.55)}px;height:${Math.round(size*0.55)}px"></i></span>`;
+}
+async function processImageFile(file, maxDim = 600, preserveAlpha = false){
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, maxDim / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(bmp.width * k));
+  c.height = Math.max(1, Math.round(bmp.height * k));
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  const mime = preserveAlpha ? "image/png" : "image/jpeg";
+  const blob = await new Promise(r => c.toBlob(r, mime, 0.86));
+  const dataUrl = c.toDataURL(mime, 0.86);
+  return { blob, dataUrl, mime, ext: preserveAlpha ? "png" : "jpg" };
+}
+async function uploadBrandingOrAvatar(file, folder, maxDim = 500, preserveAlpha = false){
+  const { blob, dataUrl, mime, ext } = await processImageFile(file, maxDim, preserveAlpha);
+  const ruta = `${folder}/${crypto.randomUUID()}.${ext}`;
+  const { error } = await sb.storage.from(BUCKET).upload(ruta, blob, { contentType: mime, upsert: true });
+  if (!error){
+    return sb.storage.from(BUCKET).getPublicUrl(ruta).data.publicUrl;
+  }
+  return dataUrl;
+}
+async function saveUserPhoto(userId, fotoUrl){
+  setLocalUserAvatar(userId, fotoUrl || "");
+  if (perfil && perfil.id === userId) perfil.foto_url = fotoUrl || null;
+  const idx = state.perfiles.findIndex(x => x.id === userId);
+  if (idx >= 0) state.perfiles[idx].foto_url = fotoUrl || null;
+  try {
+    await sb.from("perfiles").update({ foto_url: fotoUrl || null }).eq("id", userId);
+  } catch {}
+}
 
 function toast(msg, error = false){
   const t = $("toast"); t.textContent = msg; t.className = "ver" + (error ? " error" : "");
-  clearTimeout(toast.t); toast.t = setTimeout(() => t.className = "", 3200);
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.className = "", 3400);
 }
+function icons(){ if (window.lucide) lucide.createIcons(); }
 async function log(accion, entidad, detalle){
   if (!perfil) return;
-  await sb.from("registro_actividad").insert({usuario_id: perfil.id, usuario_email: perfil.usuario || perfil.email, accion, entidad: entidad || null, detalle: detalle || null});
+  try {
+    await sb.from("registro_actividad").insert({
+      usuario_id: perfil.id,
+      usuario_email: perfil.usuario || perfil.email,
+      accion, entidad: entidad || null, detalle: detalle || null
+    });
+  } catch {}
 }
-const avatarHTML = (url, nombre) => url ? `<img src="${esc(url)}" alt="Foto de ${esc(nombre)}">` : esc((nombre || "?")[0].toUpperCase());
-const edad = f => { if (!f) return "—"; const d = new Date(f), n = new Date(); let m = (n.getFullYear() - d.getFullYear()) * 12 + n.getMonth() - d.getMonth(); if (n.getDate() < d.getDate()) m--; return m >= 12 ? Math.floor(m / 12) + " años" + (m % 12 ? " " + (m % 12) + " m" : "") : m + " meses"; };
 
-/* ---------- Sesión ---------- */
-async function cargarPerfil(u){
-  const { data } = await sb.from("perfiles").select("*").eq("id", u.id).maybeSingle();
-  if (!data || !data.activo){ await sb.auth.signOut(); perfil = null; return data ? "bloqueado" : "sinperfil"; }
-  perfil = data; return null;
-}
-$("fl").addEventListener("submit", async e => {
-  e.preventDefault(); $("l-err").textContent = ""; $("l-ok").disabled = true;
-  const { data: email } = await sb.rpc("email_por_usuario", {p_usuario: $("l-mail").value});
-  const { data, error } = email ? await sb.auth.signInWithPassword({email, password: $("l-pass").value}) : {error: true};
-  if (error){ $("l-err").textContent = "Usuario o contraseña incorrectos."; $("l-ok").disabled = false; return; }
-  const r = await cargarPerfil(data.user); $("l-ok").disabled = false;
-  if (r){ $("l-err").textContent = r === "bloqueado" ? "Tu acceso está bloqueado o pendiente de aprobación. Contacta al administrador." : "Tu cuenta no tiene perfil asignado. Contacta al administrador."; return; }
-  $("dlg").close(); $("fl").reset(); await log("Inició sesión"); vista = "mascotas"; render();
-});
-$("l-x").onclick = () => $("dlg").close();
-
-/* ---------- Mostrar / ocultar contraseña ---------- */
-const OJO_ABIERTO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
-const OJO_TACHADO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.9 5.2A9.9 9.9 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.700 9.700 0 0 0 5.400-1.600"/><path d="M9.900 9.900a3 3 0 0 0 4.200 4.200"/><path d="M3 3l18 18"/></svg>';
-function ojos(root = document){
-  root.querySelectorAll("input[type=password]:not([data-ojo])").forEach(i => {
-    i.dataset.ojo = "1";
-    const w = document.createElement("div"); w.className = "clave";
-    i.parentNode.insertBefore(w, i); w.appendChild(i);
-    const b = document.createElement("button"); b.type = "button"; b.className = "ojo"; b.innerHTML = OJO_ABIERTO;
-    b.setAttribute("aria-label", "Mostrar contraseña"); b.setAttribute("aria-pressed", "false");
-    b.onclick = () => {
-      const ver = i.type === "password"; i.type = ver ? "text" : "password";
-      b.innerHTML = ver ? OJO_TACHADO : OJO_ABIERTO; b.setAttribute("aria-pressed", String(ver)); b.setAttribute("aria-label", ver ? "Ocultar contraseña" : "Mostrar contraseña");
-    };
-    w.appendChild(b);
-  });
-}
-function ocultarClaves(root){ root.querySelectorAll("input[data-ojo]").forEach(i => { i.type = "password"; i.nextElementSibling.innerHTML = OJO_ABIERTO; i.nextElementSibling.setAttribute("aria-pressed", "false"); }); }
-ojos();
-new MutationObserver(() => ojos($("app"))).observe($("app"), {childList: true, subtree: true});
-["dlg", "dlg-cuenta", "dlg-editar"].forEach(id => $(id).addEventListener("close", () => ocultarClaves($(id))));
-
-/* ---------- Menú hamburguesa (móvil) ---------- */
-function cerrarMenu(){ $("menu").classList.remove("abierto"); $("b-menu").setAttribute("aria-expanded", "false"); }
-$("b-menu").onclick = () => { const ab = $("menu").classList.toggle("abierto"); $("b-menu").setAttribute("aria-expanded", String(ab)); };
-$("menu").addEventListener("click", e => { if (e.target.closest("button,a")) cerrarMenu(); });
-document.addEventListener("click", e => { if (!e.target.closest("header.top")) cerrarMenu(); });
-document.addEventListener("keydown", e => { if (e.key === "Escape") cerrarMenu(); });
-
-/* ---------- Mi cuenta ---------- */
-$("c-x").onclick = () => $("dlg-cuenta").close();
-let editCuenta = false;
-function modoCuenta(ed){
-  editCuenta = ed;
-  ["c-nombre", "c-act", "c-new"].forEach(id => $(id).disabled = !ed);
-  $("c-ed").textContent = ed ? "Cancelar edición" : "Editar perfil";
-  $("c-ed").classList.toggle("pri", !ed);
-  revisarCambios();
-}
-function revisarCambios(){
-  const n = $("c-nombre").value.trim();
-  $("c-gn").hidden = !(editCuenta && n && n !== perfil.nombre);
-  $("c-gp").hidden = !(editCuenta && ($("c-act").value || $("c-new").value));
-}
-function abrirCuenta(){
-  $("c-user").value = perfil.usuario || ""; $("c-nombre").value = perfil.nombre; $("c-act").value = $("c-new").value = "";
-  ocultarClaves($("dlg-cuenta")); modoCuenta(false); $("dlg-cuenta").showModal();
-}
-["c-nombre", "c-act", "c-new"].forEach(id => $(id).addEventListener("input", revisarCambios));
-$("c-ed").onclick = () => {
-  const entrar = !editCuenta;
-  if (!entrar){ $("c-nombre").value = perfil.nombre; $("c-act").value = $("c-new").value = ""; ocultarClaves($("dlg-cuenta")); }
-  modoCuenta(entrar); if (entrar) $("c-nombre").focus();
+/* ============ CAPA DE DATOS HÍBRIDA ============ */
+const missingTables = new Set();
+const localStore = {
+  get(t){ try { return JSON.parse(localStorage.getItem("vx_tbl_" + t) || "[]"); } catch { return []; } },
+  set(t, rows){ localStorage.setItem("vx_tbl_" + t, JSON.stringify(rows)); }
 };
-$("fc-n").addEventListener("submit", async e => {
-  e.preventDefault(); const n = $("c-nombre").value.trim(); if (!n || n === perfil.nombre) return;
-  if (!confirm(`¿Guardar el cambio de nombre de usuario a "${n}"?`)) return;
-  const { error } = await sb.rpc("actualizar_mi_nombre", {p_nombre: n});
-  if (error) return toast("No se pudo guardar: " + error.message, true);
-  perfil.nombre = n; pintarCabecera(); revisarCambios(); log("Cambió su nombre", "perfiles", n); toast("Nombre actualizado.");
-});
-$("fc-p").addEventListener("submit", async e => {
-  e.preventDefault();
-  if (!$("c-act").value) return toast("Escribe tu contraseña actual.", true);
-  if ($("c-new").value.length < 6) return toast("La nueva contraseña debe tener al menos 6 caracteres.", true);
-  if (!confirm("¿Guardar la nueva contraseña?")) return;
-  const { data: { user } } = await sb.auth.getUser();
-  const chk = await sb.auth.signInWithPassword({email: user.email, password: $("c-act").value});
-  if (chk.error) return toast("La contraseña actual no es correcta.", true);
-  const { error } = await sb.auth.updateUser({password: $("c-new").value});
-  if (error) return toast("No se pudo cambiar: " + error.message, true);
-  $("c-act").value = $("c-new").value = ""; ocultarClaves($("dlg-cuenta")); revisarCambios(); log("Cambió su contraseña", "perfiles"); toast("Contraseña actualizada.");
-});
+const isMissingTableErr = err => err && (err.code === "42P01" || err.code === "PGRST205" || /relation .* does not exist|Could not find the table/i.test(err.message || ""));
+const extractMissingCol = err => {
+  const m = (err?.message || "").match(/Could not find the '([^']+)' column|column "([^"]+)" of relation/i);
+  return m ? (m[1] || m[2]) : null;
+};
 
-/* ---------- Estructura ---------- */
-function pintarCabecera(){
-  $("sesion").innerHTML = perfil
-    ? `<span class="chip">${esc(perfil.nombre)} · ${esc(perfil.rol)}</span><button class="btn" id="b-cuenta">Mi cuenta</button><button class="btn" id="b-salir">Salir</button>`
-    : `<button class="btn pri" id="b-login">Iniciar sesión</button>`;
-  if ($("b-login")) $("b-login").onclick = () => $("dlg").showModal();
-  if ($("b-cuenta")) $("b-cuenta").onclick = abrirCuenta;
-  if ($("b-salir")) $("b-salir").onclick = async () => {
-    try { await log("Cerró sesión"); await sb.auth.signOut(); } catch {}
-    try { await sb.auth.signOut({scope: "local"}); } catch {}
-    Object.keys(localStorage).filter(k => k.startsWith("sb-")).forEach(k => localStorage.removeItem(k)); // borra la sesión guardada
-    perfil = null; selId = null; vista = "mascotas"; render();
-  };
-  const secs = [["mascotas","Mascotas"], ...(isAdmin() ? [["usuarios","Usuarios"],["actividad","Actividad"]] : [])];
-  $("nav").innerHTML = !perfil ? "" : publicId ? `<button class="btn pri" id="b-avanzada">Abrir ficha avanzada</button>`
-    : secs.map(([v,l]) => `<button class="btn ${v === vista ? "pri" : ""}" data-v="${v}">${l}</button>`).join("");
-  if ($("b-avanzada")) $("b-avanzada").onclick = () => { forzarPublico = false; render(); };
-  $("nav").querySelectorAll("[data-v]").forEach(b => b.onclick = () => { vista = b.dataset.v; render(); });
-  $("menu").classList.toggle("solo-movil", !perfil && !publicId); cerrarMenu(); // en la portada, el menú solo existe en móvil
-}
-function render(){
-  // Personal con sesión que abre un enlace público: pasa directo a la ficha avanzada
-  if (publicId && perfil && !forzarPublico){ selId = publicId; publicId = null; history.replaceState(null, "", location.pathname); tab = "datos"; vista = "mascotas"; }
-  pintarCabecera();
-  if (publicId) return pintarPublico();
-  if (!perfil) return pintarPortada();
-  if (vista !== "mascotas" && !isAdmin()) vista = "mascotas";
-  ({mascotas: vistaMascotas, usuarios: vistaUsuarios, actividad: vistaActividad})[vista]();
-}
+const db = {
+  async list(table, orderCol = "creado_en", asc = false){
+    if (missingTables.has(table)) return localStore.get(table);
+    let q = sb.from(table).select("*");
+    if (orderCol) q = q.order(orderCol, {ascending: asc});
+    const { data, error } = await q;
+    if (error){
+      if (isMissingTableErr(error)){ missingTables.add(table); return localStore.get(table); }
+      return [];
+    }
+    return data || [];
+  },
+  async insert(table, payload){
+    if (missingTables.has(table)){
+      const row = {id: crypto.randomUUID(), creado_en: new Date().toISOString(), ...payload};
+      const all = [row, ...localStore.get(table)]; localStore.set(table, all);
+      return row;
+    }
+    let body = {...payload};
+    for (let i = 0; i < 8; i++){
+      const { data, error } = await sb.from(table).insert(body).select().single();
+      if (!error) return data;
+      if (isMissingTableErr(error)){
+        missingTables.add(table);
+        const row = {id: crypto.randomUUID(), creado_en: new Date().toISOString(), ...payload};
+        localStore.set(table, [row, ...localStore.get(table)]);
+        return row;
+      }
+      const badCol = extractMissingCol(error);
+      if (badCol && badCol in body){ delete body[badCol]; continue; }
+      throw error;
+    }
+  },
+  async update(table, id, payload){
+    if (missingTables.has(table)){
+      const all = localStore.get(table).map(r => String(r.id) === String(id) ? {...r, ...payload} : r);
+      localStore.set(table, all);
+      return all.find(r => String(r.id) === String(id));
+    }
+    let body = {...payload};
+    for (let i = 0; i < 8; i++){
+      const { data, error } = await sb.from(table).update(body).eq("id", id).select().single();
+      if (!error) return data;
+      if (isMissingTableErr(error)){
+        missingTables.add(table);
+        const all = localStore.get(table).map(r => String(r.id) === String(id) ? {...r, ...payload} : r);
+        localStore.set(table, all);
+        return all.find(r => String(r.id) === String(id));
+      }
+      const badCol = extractMissingCol(error);
+      if (badCol && badCol in body){ delete body[badCol]; continue; }
+      throw error;
+    }
+  },
+  async remove(table, id){
+    if (missingTables.has(table)){
+      localStore.set(table, localStore.get(table).filter(r => String(r.id) !== String(id)));
+      return;
+    }
+    const { error } = await sb.from(table).delete().eq("id", id);
+    if (error){
+      if (isMissingTableErr(error)){
+        missingTables.add(table);
+        localStore.set(table, localStore.get(table).filter(r => String(r.id) !== String(id)));
+        return;
+      }
+      throw error;
+    }
+  }
+};
 
-/* ---------- Portada ---------- */
-const PORTADA_ARTE = `<svg class="portada-art" viewBox="0 0 520 570" role="img" aria-label="Ilustración de una huella de mascota">
-<polygon points="150.0,6.0 157.4,39.2 182.9,16.7 169.4,47.9 203.3,44.7 174.0,62.0 203.3,79.3 169.4,76.1 182.9,107.3 157.4,84.8 150.0,118.0 142.6,84.8 117.1,107.3 130.6,76.1 96.7,79.3 126.0,62.0 96.7,44.7 130.6,47.9 117.1,16.7 142.6,39.2" fill="#4318e5"/>
-<circle cx="300" cy="250" r="200" fill="#fcf7e8"/>
-<g fill="#4318e5"><path d="M300 262c-48 0-84 32-84 66 0 30 26 42 53 38 13-2 21-6 31-6s18 4 31 6c27 4 53-8 53-38 0-34-36-66-84-66z"/>
-<ellipse cx="222" cy="232" rx="23" ry="34" transform="rotate(-24 222 232)"/><ellipse cx="268" cy="182" rx="23" ry="36" transform="rotate(-8 268 182)"/>
-<ellipse cx="332" cy="182" rx="23" ry="36" transform="rotate(8 332 182)"/><ellipse cx="378" cy="232" rx="23" ry="34" transform="rotate(24 378 232)"/></g>
-<path d="M300 462h80a60 45 0 0 1 60 45v45H300z" fill="#4318e5"/><path d="M322 552c8-44 52-58 92-34M390 552c0-24 14-38 34-44" fill="none" stroke="#fff" stroke-width="1.6"/>
-<rect x="190" y="455" width="110" height="100" fill="#fcf7e8"/><g fill="#ff1a5e"><rect x="205" y="468" width="24" height="7" rx="3.5" transform="rotate(-30 217 471.5)"/><rect x="235" y="462" width="24" height="7" rx="3.5" transform="rotate(60 247 465.5)"/><rect x="262" y="478" width="24" height="7" rx="3.5" transform="rotate(30 274 481.5)"/><rect x="210" y="500" width="24" height="7" rx="3.5" transform="rotate(20 222 503.5)"/><rect x="240" y="495" width="24" height="7" rx="3.5" transform="rotate(-60 252 498.5)"/><rect x="268" y="508" width="24" height="7" rx="3.5" transform="rotate(-20 280 511.5)"/><rect x="222" y="528" width="24" height="7" rx="3.5" transform="rotate(45 234 531.5)"/></g>
-<path d="M152 478a38 38 0 0 1 0 76z" fill="#fff"/><circle cx="112" cy="516" r="34" fill="#ff1a5e"/>
-<path d="M44 392q4 20 20 25q-16 4-20 25q-4-21-20-25q16-5 20-25z" fill="#4318e5"/></svg>`, PORTADA_PUNTOS = `<svg class="pt" viewBox="0 0 260 200" aria-hidden="true"><g fill="#fff"><circle cx="-2" cy="5" r="4.0"/><circle cx="19" cy="5" r="3.8"/><circle cx="47" cy="10" r="3.4"/><circle cx="64" cy="8" r="3.3"/><circle cx="85" cy="5" r="3.2"/><circle cx="113" cy="11" r="2.8"/><circle cx="134" cy="6" r="2.7"/><circle cx="155" cy="10" r="2.5"/><circle cx="179" cy="5" r="2.3"/><circle cx="220" cy="5" r="1.9"/><circle cx="14" cy="29" r="3.5"/><circle cx="36" cy="28" r="3.3"/><circle cx="56" cy="27" r="3.2"/><circle cx="95" cy="29" r="2.8"/><circle cx="121" cy="28" r="2.5"/><circle cx="147" cy="26" r="2.3"/><circle cx="163" cy="29" r="2.2"/><circle cx="186" cy="30" r="1.9"/><circle cx="227" cy="26" r="1.6"/><circle cx="24" cy="51" r="3.2"/><circle cx="64" cy="52" r="2.8"/><circle cx="87" cy="52" r="2.6"/><circle cx="132" cy="45" r="2.2"/><circle cx="172" cy="45" r="1.9"/><circle cx="33" cy="66" r="2.9"/><circle cx="52" cy="68" r="2.7"/><circle cx="76" cy="72" r="2.4"/><circle cx="120" cy="66" r="2.1"/><circle cx="205" cy="71" r="1.6"/><circle cx="2" cy="90" r="2.9"/><circle cx="19" cy="86" r="2.8"/><circle cx="47" cy="91" r="2.5"/><circle cx="67" cy="90" r="2.3"/><circle cx="91" cy="88" r="2.1"/><circle cx="111" cy="86" r="1.9"/><circle cx="136" cy="85" r="1.7"/><circle cx="179" cy="85" r="1.6"/><circle cx="36" cy="104" r="2.4"/><circle cx="52" cy="110" r="2.2"/><circle cx="80" cy="108" r="2.0"/><circle cx="97" cy="109" r="1.8"/><circle cx="124" cy="110" r="1.6"/><circle cx="3" cy="125" r="2.5"/><circle cx="21" cy="130" r="2.2"/><circle cx="42" cy="128" r="2.1"/><circle cx="63" cy="125" r="1.9"/><circle cx="91" cy="128" r="1.6"/><circle cx="31" cy="148" r="1.9"/><circle cx="101" cy="152" r="1.6"/><circle cx="47" cy="167" r="1.6"/><circle cx="12" cy="192" r="1.6"/><circle cx="37" cy="185" r="1.6"/></g></svg>`, PORTADA_ONDA = `<svg class="onda" viewBox="0 0 250 40" aria-hidden="true"><circle cx="16" cy="20" r="14" fill="#fff"/><path d="M56 22c20-26 40-26 60 0s40 26 60 0 30-18 44-10" fill="none" stroke="#ff1a5e" stroke-width="4" stroke-linecap="round"/></svg>`;
-function pintarPortada(){
-  $("app").innerHTML = `<section class="portada" aria-labelledby="t-portada">${PORTADA_PUNTOS}
-    <div class="texto"><h1 id="t-portada"><span class="t1">Carnet</span><span class="t2">Veterinario</span><span class="t3">Digital</span></h1>
-    <p class="sub">El historial clínico de cada mascota, siempre a la mano.</p>
-    <button class="btn pri grande" id="b-login2">Iniciar sesión</button>
-    <p class="nota">Acceso para veterinarios y administradores. Los perfiles de las mascotas se comparten con un enlace público.</p></div>
-    ${PORTADA_ARTE}${PORTADA_ONDA}</section>`;
-  $("b-login2").onclick = () => $("dlg").showModal();
-}
+/* ============ ESTADO GLOBAL ============ */
+let perfil = null;
+const cachedCfg = (() => { try { return JSON.parse(localStorage.getItem("vx_config_cache") || "{}"); } catch { return {}; } })();
+const state = {
+  route: "dashboard",
+  sidebarOpen: false,
+  selectedPetId: null,
+  clinTab: "cronologia",
+  dashRange: "30",
+  petViewMode: "cards",
+  mascotas: [],
+  propietarios: [],
+  consultas: [],
+  vacunas: [],
+  desparasitaciones: [],
+  cirugias: [],
+  examenes: [],
+  medicacion: [],
+  documentos: [],
+  citas: [],
+  procedimientos: [],
+  procMascota: [],
+  hospitalizaciones: [],
+  kardex: [],
+  productos: [],
+  movimientos: [],
+  ventas: [],
+  notificaciones: [],
+  campanas: [],
+  perfiles: [],
+  actividad: [],
+  cart: [],
+  config: {
+    id: 1,
+    nombre_clinica: "VEXAVET Clínica Veterinaria",
+    nit_ruc: "0990000000001",
+    pais: "Ecuador",
+    moneda: "$",
+    impuesto_nombre: "IVA",
+    impuesto_porcentaje: 15,
+    telefono: "+593 99 000 0000",
+    email: "contacto@vexavet.com",
+    direccion: "Av. Principal y Calle Secundaria",
+    ciudad: "Guayaquil",
+    horario: "Lun - Sáb: 08:00 - 20:00",
+    sedes: "Matriz Central",
+    metodos_pago: "Efectivo, Tarjeta, Transferencia",
+    logo_url: localStorage.getItem("vx_logo_url") || "",
+    favicon_url: localStorage.getItem("vx_favicon_url") || "",
+    custom_bg: localStorage.getItem("vx_custom_bg") || "",
+    ...cachedCfg
+  }
+};
 
-/* ---------- Perfil público ---------- */
-async function pintarPublico(){
-  $("app").innerHTML = `<div class="panel pad">Cargando…</div>`;
-  const { data, error } = await sb.rpc("mascota_publica", {p_id: publicId});
-  if (error || !data) return $("app").innerHTML = `<div class="panel pad"><h2>Perfil no encontrado</h2><p>El enlace no corresponde a ninguna mascota registrada.</p></div>`;
-  const m = data.mascota, hoyS = hoy();
-  $("app").innerHTML = `<article class="panel pub">
-    <div class="cab"><div class="avatar">${avatarHTML(m.foto_url, m.nombre)}</div><div class="cab-t"><h1>${esc(m.nombre)}</h1><span class="chip">${esc([m.especie, m.raza].filter(Boolean).join(" · "))}</span>
-    <span class="${m.vacunas_al_dia ? "ok" : "venc"}">${m.vacunas_al_dia ? "Vacunas al día" : "Vacunas pendientes"}</span></div></div>
-    <dl><dt>Sexo</dt><dd>${esc(m.sexo || "—")}</dd><dt>Edad</dt><dd>${edad(m.fecha_nacimiento)}</dd><dt>Color</dt><dd>${esc(m.color || "—")}</dd>
-    <dt>Peso</dt><dd>${m.peso_kg ? esc(m.peso_kg) + " kg" : "—"}</dd><dt>Esterilizado</dt><dd>${m.esterilizado ? "Sí" : "No"}</dd><dt>Microchip</dt><dd>${esc(m.microchip || "—")}</dd></dl>
-    <h3>Vacunas</h3><div class="tabla"><table><thead><tr><th>Vacuna</th><th>Fecha</th><th>Próxima dosis</th></tr></thead><tbody>
-    ${data.vacunas.map(v => `<tr><td>${esc(v.vacuna)}</td><td>${fecha(v.fecha)}</td><td class="${v.proxima_dosis && v.proxima_dosis < hoyS ? "venc" : ""}">${fecha(v.proxima_dosis)}${v.proxima_dosis && v.proxima_dosis < hoyS ? " · vencida" : ""}</td></tr>`).join("") || `<tr><td colspan="3">Sin vacunas registradas.</td></tr>`}
-    </tbody></table></div></article>`;
-}
-
-/* ---------- Mascotas (personal) ---------- */
-async function cargarMascotas(){
-  const { data, error } = await sb.from("mascotas").select("*").order("nombre");
-  if (error) return toast("No se pudo cargar: " + error.message, true);
-  mascotas = data; pintarLista(); pintarDetalle();
-}
-function vistaMascotas(){
-  $("app").innerHTML = `<div class="layout"><aside class="panel lista" aria-label="Mascotas"><div class="lista-cab"><input id="buscar" type="search" placeholder="Buscar por nombre o dueño" aria-label="Buscar"><button class="btn pri" id="b-nueva">Nueva</button></div><ul id="lista"></ul></aside><section class="panel det" id="det"></section></div>`;
-  $("buscar").oninput = pintarLista;
-  $("b-nueva").onclick = () => { if (!descartar()) return; selId = null; nueva = true; editando = false; tab = "datos"; reiniciarFoto(); pintarLista(); pintarDetalle(); };
-  cargarMascotas();
-}
-function descartar(){ return !(editando || nueva) || confirm("Tienes cambios sin guardar. ¿Descartarlos?"); }
-function pintarLista(){
-  const q = ($("buscar")?.value || "").trim().toLowerCase(), ul = $("lista");
-  const f = mascotas.filter(m => (m.nombre + " " + (m.duenio_nombre || "")).toLowerCase().includes(q));
-  ul.innerHTML = f.length ? "" : `<li class="vacio">${mascotas.length ? "Sin resultados." : "Aún no hay mascotas."}</li>`;
-  f.forEach(m => {
-    const li = document.createElement("li");
-    li.innerHTML = `<button type="button" ${m.id === selId ? 'aria-current="true"' : ""}><span class="mini">${avatarHTML(m.foto_url, m.nombre)}</span><span><span class="n">${esc(m.nombre)}</span><span class="s">${esc([m.especie, m.raza, m.duenio_nombre].filter(Boolean).join(" · "))}</span></span></button>`;
-    li.firstChild.onclick = () => { if (!descartar()) return; selId = m.id; nueva = false; editando = false; tab = "datos"; reiniciarFoto(); pintarLista(); pintarDetalle(); if (innerWidth <= 820) $("det").scrollIntoView({behavior: "smooth"}); };
-    ul.appendChild(li);
-  });
-}
-function reiniciarFoto(){ if (fotoPrev) URL.revokeObjectURL(fotoPrev); fotoArchivo = fotoPrev = null; fotoQuitada = false; }
-function pintarDetalle(){
-  const det = $("det"), m = mascotas.find(x => x.id === selId);
-  if (!m && !nueva) return det.innerHTML = `<p class="vacio">Selecciona una mascota de la lista o registra una nueva.</p>`;
-  det.innerHTML = `<input type="file" id="foto-in" accept="image/jpeg,image/png,image/webp" hidden><div class="cab" id="cab"></div>
-    ${nueva ? "" : `<div class="tabs" role="tablist">${[["datos","Datos"], ...Object.entries(CLIN).map(([k,v]) => [k, v.t])].map(([k,l]) => `<button class="tab" role="tab" data-t="${k}" aria-current="${k === tab}">${l}</button>`).join("")}</div>`}
-    <div id="cuerpo"></div>`;
-  det.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { tab = b.dataset.t; pintarDetalle(); });
-  pintarCab();
-  tab === "datos" ? pintarDatos(m) : pintarClin(tab);
-}
-function pintarCab(){
-  const m = mascotas.find(x => x.id === selId) || {}, ed = editando || nueva;
-  const url = fotoArchivo ? fotoPrev : (fotoQuitada ? null : m.foto_url);
-  $("cab").innerHTML = `<div class="avatar">${avatarHTML(url, m.nombre)}</div><div class="cab-t"><h2>${nueva ? "Nueva mascota" : esc(m.nombre)}</h2>
-    ${nueva ? "" : `<div class="fila"><button class="btn" id="b-copiar">Copiar enlace público</button><a class="btn" target="_blank" rel="noopener" href="${enlace(m.id)}&vista=publica">Ver perfil público</a></div>`}
-    ${ed ? `<div class="fila"><button type="button" class="btn" id="b-foto">${url ? "Cambiar" : "Subir"} foto</button>${url ? '<button type="button" class="btn" id="b-qfoto">Quitar foto</button>' : ""}</div>` : ""}</div>`;
-  if ($("b-copiar")) $("b-copiar").onclick = async () => { try { await navigator.clipboard.writeText(enlace(m.id)); toast("Enlace copiado."); } catch { prompt("Copia este enlace:", enlace(m.id)); } };
-  if ($("b-foto")) $("b-foto").onclick = () => $("foto-in").click();
-  if ($("b-qfoto")) $("b-qfoto").onclick = () => { reiniciarFoto(); fotoQuitada = true; pintarCab(); };
-}
-$("app").addEventListener("change", async e => {
-  if (e.target.id !== "foto-in") return;
-  const f = e.target.files[0]; e.target.value = "";
-  if (!f || !/^image\/(jpeg|png|webp)$/.test(f.type)) return f && toast("Elige una imagen JPG, PNG o WebP.", true);
+async function loadPublicBranding(){
   try {
-    const bmp = await createImageBitmap(f), k = Math.min(1, 800 / Math.max(bmp.width, bmp.height)), c = document.createElement("canvas");
-    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k); c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
-    const blob = await new Promise(r => c.toBlob(r, "image/jpeg", .85));
-    reiniciarFoto(); fotoArchivo = blob; fotoPrev = URL.createObjectURL(blob); pintarCab();
-  } catch { toast("No se pudo leer la imagen.", true); }
-});
-
-function campo([k, l, t, o], v){
-  if (t === "check") return `<div class="check"><input id="${k}" name="${k}" type="checkbox" ${v ? "checked" : ""}><label for="${k}">${l}</label></div>`;
-  const i = t === "sel" ? `<select id="${k}" name="${k}">${o.map(x => `<option value="${x}" ${x === v ? "selected" : ""}>${x || "—"}</option>`).join("")}</select>`
-    : t === "area" ? `<textarea id="${k}" name="${k}">${esc(v)}</textarea>`
-    : `<input id="${k}" name="${k}" type="${t}" value="${esc(v)}" ${t === "number" ? 'step="0.01" min="0"' : ""}>`;
-  return `<div class="${["area"].includes(t) || ["alergias","duenio_direccion"].includes(k) ? "full" : ""}"><label for="${k}">${l}</label>${i}</div>`;
-}
-function pintarDatos(m = {}){
-  const ed = editando || nueva;
-  $("cuerpo").innerHTML = `<form id="f" novalidate><fieldset ${ed ? "" : "disabled"}><div class="grid">${CAMPOS.map(c => campo(c, m[c[0]] ?? (c[0] === "especie" ? "Perro" : ""))).join("")}</div></fieldset>
-    <div class="acciones">${ed ? `<button class="btn pri" id="b-guardar">Guardar cambios</button><button type="button" class="btn" id="b-cancelar">Cancelar</button>` : `<button type="button" class="btn pri" id="b-editar">Editar</button>`}
-    <span class="esp"></span>${isAdmin() && !nueva ? `<button type="button" class="btn pel" id="b-eliminar">Eliminar</button>` : ""}</div></form>`;
-  if ($("b-editar")) $("b-editar").onclick = () => { editando = true; pintarCab(); pintarDatos(m); };
-  if ($("b-cancelar")) $("b-cancelar").onclick = () => { reiniciarFoto(); if (nueva) { nueva = false; pintarDetalle(); } else { editando = false; pintarCab(); pintarDatos(m); } };
-  if ($("b-eliminar")) $("b-eliminar").onclick = () => eliminar(m);
-  $("f").onsubmit = e => { e.preventDefault(); guardar(m); };
-}
-async function borrarFoto(url){ const p = url && url.split("/" + BUCKET + "/")[1]; if (p) await sb.storage.from(BUCKET).remove([decodeURIComponent(p.split("?")[0])]); }
-async function guardar(m){
-  const f = $("f"), fila = {};
-  CAMPOS.forEach(([k,,t]) => { if (t === "check") fila[k] = f.elements[k].checked; else { const v = f.elements[k].value.trim(); fila[k] = v === "" ? null : t === "number" ? Number(v) : v; } });
-  if (!fila.nombre) { toast("El nombre es obligatorio.", true); return f.elements.nombre.focus(); }
-  fila.especie ||= "Perro";
-  $("b-guardar").disabled = true; let subida = null;
-  try {
-    if (fotoArchivo){
-      const ruta = crypto.randomUUID() + ".jpg";
-      const { error } = await sb.storage.from(BUCKET).upload(ruta, fotoArchivo, {contentType: "image/jpeg"}); if (error) throw error;
-      subida = sb.storage.from(BUCKET).getPublicUrl(ruta).data.publicUrl; fila.foto_url = subida;
-    } else if (fotoQuitada) fila.foto_url = null;
-    const q = nueva ? sb.from("mascotas").insert(fila) : sb.from("mascotas").update({...fila, actualizado_en: new Date().toISOString()}).eq("id", selId);
-    const { data, error } = await q.select().single();
-    if (error){ if (subida) borrarFoto(subida); throw error; }
-    if (m?.foto_url && (subida || fotoQuitada)) borrarFoto(m.foto_url).catch(() => {});
-    log(nueva ? "Creó mascota" : "Editó mascota", "mascotas", fila.nombre);
-    selId = data.id; nueva = false; editando = false; reiniciarFoto(); await cargarMascotas(); toast("Cambios guardados.");
-  } catch (err) { toast("No se pudo guardar: " + (err.message || "error"), true); $("b-guardar") && ($("b-guardar").disabled = false); }
-}
-async function eliminar(m){
-  if (!confirm(`¿Eliminar la ficha de ${m.nombre} y todo su historial? Esta acción no se puede deshacer.`)) return;
-  const { error } = await sb.from("mascotas").delete().eq("id", m.id);
-  if (error) return toast("No se pudo eliminar: " + error.message, true);
-  if (m.foto_url) borrarFoto(m.foto_url).catch(() => {});
-  log("Eliminó mascota", "mascotas", m.nombre); selId = null; await cargarMascotas(); toast("Mascota eliminada.");
+    const { data } = await sb.from("configuracion_clinica").select("*").eq("id", 1).maybeSingle();
+    if (data){
+      state.config = { ...state.config, ...data };
+      if (data.logo_url) localStorage.setItem("vx_logo_url", data.logo_url);
+      if (data.favicon_url) localStorage.setItem("vx_favicon_url", data.favicon_url);
+      if (data.custom_bg) localStorage.setItem("vx_custom_bg", data.custom_bg);
+      localStorage.setItem("vx_config_cache", JSON.stringify(state.config));
+    }
+  } catch {}
+  applyCustomAppearance();
 }
 
-/* ---------- Historial clínico ---------- */
-async function pintarClin(t){
-  const cfg = CLIN[t], cu = $("cuerpo"), hoyS = hoy(); cu.innerHTML = `<p class="vacio">Cargando…</p>`;
-  const { data, error } = await sb.from(t).select("*").eq("mascota_id", selId).order(cfg.o, {ascending: false});
-  if (tab !== t) return;
-  if (error) return cu.innerHTML = `<p class="vacio">No se pudo cargar: ${esc(error.message)}</p>`;
-  const celda = (k, v) => k === "proxima_dosis" || k === "fecha" || k.startsWith("fecha_") ? (k === "proxima_dosis" && v && v < hoyS ? `<span class="venc">${fecha(v)} · vencida</span>` : fecha(v)) : esc(v ?? "—");
-  cu.innerHTML = `<div class="tabla"><table><thead><tr>${cfg.c.map(c => `<th>${c[1]}</th>`).join("")}<th></th></tr></thead><tbody>
-    ${data.map(r => `<tr>${cfg.c.map(([k]) => `<td>${celda(k, r[k])}</td>`).join("")}<td><button class="btn pel" data-del="${r.id}" aria-label="Eliminar registro">Quitar</button></td></tr>`).join("") || `<tr><td colspan="${cfg.c.length + 1}">Sin registros todavía.</td></tr>`}</tbody></table></div>
-    <details><summary class="btn pri">Agregar registro</summary><form id="fa" class="grid">${cfg.c.map(([k,l,ty,req]) => `<div><label for="a-${k}">${l}${req ? " *" : ""}</label><input id="a-${k}" name="${k}" type="${ty}" ${req ? "required" : ""} ${ty === "number" ? 'step="0.01"' : ""}></div>`).join("")}<div class="full"><button class="btn pri">Guardar registro</button></div></form></details>`;
-  cu.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
-    if (!confirm("¿Quitar este registro?")) return;
-    const { error } = await sb.from(t).delete().eq("id", b.dataset.del);
-    if (error) return toast(error.message, true);
-    log("Quitó registro", t, mascotas.find(x => x.id === selId)?.nombre); pintarClin(t);
+async function syncAllData(){
+  const [
+    mascotas, propietarios, consultas, vacunas, desparasitaciones,
+    cirugias, examenes, medicacion, documentos, citas,
+    procedimientos, procMascota, hospitalizaciones, kardex,
+    productos, movimientos, ventas, notificaciones, campanas,
+    perfiles, actividad, cfgList
+  ] = await Promise.all([
+    db.list("mascotas", "nombre", true),
+    db.list("propietarios", "nombre", true),
+    db.list("consultas", "fecha", false),
+    db.list("vacunas", "fecha", false),
+    db.list("desparasitaciones", "fecha", false),
+    db.list("cirugias", "fecha", false),
+    db.list("examenes", "fecha", false),
+    db.list("medicacion", "fecha_inicio", false),
+    db.list("documentos_clinicos", "fecha", false),
+    db.list("citas", "fecha_inicio", true),
+    db.list("procedimientos", "nombre", true),
+    db.list("procedimientos_mascota", "fecha", false),
+    db.list("hospitalizaciones", "fecha_ingreso", false),
+    db.list("kardex_hospitalizacion", "creado_en", false),
+    db.list("productos", "nombre", true),
+    db.list("movimientos_inventario", "creado_en", false),
+    db.list("ventas", "creado_en", false),
+    db.list("notificaciones", "creado_en", false),
+    db.list("campanas_marketing", "creado_en", false),
+    db.list("perfiles", "creado_en", true),
+    db.list("registro_actividad", "creado_en", false),
+    db.list("configuracion_clinica", "id", true)
+  ]);
+
+  state.mascotas = mascotas.map(m => ({ ...m, nfc_uid: getPetNfcUid(m) || null }));
+  state.mascotas.forEach(m => { if (m.nfc_uid) saveLocalNfcMap(m.nfc_uid, m.id); });
+
+  const propMap = new Map();
+  propietarios.forEach(p => propMap.set((p.nombre || "").trim().toLowerCase(), p));
+  mascotas.forEach(m => {
+    const key = (m.duenio_nombre || "").trim().toLowerCase();
+    if (key && !propMap.has(key)){
+      propMap.set(key, {
+        id: "legacy-" + key,
+        nombre: m.duenio_nombre.trim(),
+        identificacion: "",
+        telefono: m.duenio_telefono || "",
+        email: m.duenio_email || "",
+        direccion: m.duenio_direccion || "",
+        observaciones: "Sincronizado desde ficha de mascota",
+        _legacy: true
+      });
+    }
   });
-  $("fa").onsubmit = async e => {
-    e.preventDefault(); const fila = {mascota_id: selId};
-    cfg.c.forEach(([k,,ty]) => { const v = $("fa").elements[k].value.trim(); fila[k] = v === "" ? null : ty === "number" ? Number(v) : v; });
-    const { error } = await sb.from(t).insert(fila);
-    if (error) return toast("No se pudo guardar: " + error.message, true);
-    log("Agregó registro", t, mascotas.find(x => x.id === selId)?.nombre); toast("Registro guardado."); pintarClin(t);
-  };
-}
-
-/* ---------- Administración: usuarios ---------- */
-async function llamarAdmin(body){
-  const { data, error } = await sb.functions.invoke("admin-usuarios", {body});
-  if (error){ let m = error.message; try { m = (await error.context.json()).error || m; } catch {} throw new Error(m); }
-  if (data?.error) throw new Error(data.error);
-  return data;
-}
-async function cambiarPerfil(id, cambios){
-  const { data, error } = await sb.from("perfiles").update(cambios).eq("id", id).select();
-  if (error) throw error;
-  if (!data.length) throw new Error("No se aplicó el cambio. Verifica que seas administrador y que existan las políticas de perfiles.");
-}
-async function vistaUsuarios(){
-  const { data, error } = await sb.from("perfiles").select("*").order("creado_en");
-  if (error) return $("app").innerHTML = `<div class="panel pad">No se pudo cargar: ${esc(error.message)}</div>`;
-  const etiqueta = r => r === ROL_ADMIN ? "Administrador" : "Veterinario";
-  const opciones = `<option value="${ROL_VET}">Veterinario</option><option value="${ROL_ADMIN}">Administrador</option>`;
-  let uEdit = null;
-  $("app").innerHTML = `<div class="panel pad"><div class="fila" style="justify-content:space-between;margin-bottom:14px"><h2>Usuarios</h2>
-    <div class="fila"><button class="btn pri" id="b-agregar">Agregar usuario</button><button class="btn" id="b-cancelar-u" disabled>Cancelar</button></div></div>
-    <form id="fu" class="grid" hidden style="margin-bottom:18px;padding:16px;background:var(--ro);border-radius:var(--r)">
-      <div><label for="u-u">Usuario (para iniciar sesión)</label><input id="u-u" required pattern="[a-zA-Z0-9._-]{3,30}" autocapitalize="none"></div><div><label for="u-n">Nombre</label><input id="u-n" required></div>
-      <div><label for="u-p">Contraseña (mín. 6)</label><input id="u-p" type="password" minlength="6" required autocomplete="new-password"></div>
-      <div><label for="u-r">Rol</label><select id="u-r">${opciones}</select></div>
-      <div class="full"><button class="btn pri">Crear usuario</button></div></form>
-    <div class="tabla"><table><thead><tr><th>Estado</th><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Acceso</th><th>Acciones</th></tr></thead><tbody>
-    ${data.map(u => { const yo = u.id === perfil.id; return `<tr><td class="estado"><span class="punto ${u.activo ? "on" : "off"}" aria-hidden="true"></span>${u.activo ? "Habilitado" : "Bloqueado"}</td><td>${esc(u.nombre)}</td><td>${esc(u.usuario || "—")}</td><td>${etiqueta(u.rol)}</td>
-    <td><button class="btn ${u.activo ? "rojo" : "verde"}" data-act="${u.id}" ${yo ? "disabled" : ""}>${u.activo ? "Bloquear" : "Habilitar"}</button></td>
-    <td><div class="fila"><button class="btn" data-edit="${u.id}">Editar</button><button class="btn pel" data-del="${u.id}" ${yo ? "disabled" : ""}>Eliminar</button></div></td></tr>`; }).join("")}</tbody></table></div></div>`;
-  const por = id => data.find(u => u.id === id);
-  const intentar = async (f, ok) => { try { await f(); toast(ok); vistaUsuarios(); } catch (err) { toast(err.message, true); vistaUsuarios(); } };
-
-  // Formulario de creación: oculto hasta pulsar "Agregar usuario"
-  const cerrarForm = () => { $("fu").reset(); ocultarClaves($("fu")); $("fu").hidden = true; $("b-cancelar-u").disabled = true; $("b-agregar").disabled = false; };
-  $("b-agregar").onclick = () => { $("fu").hidden = false; $("b-cancelar-u").disabled = false; $("b-agregar").disabled = true; $("u-u").focus(); };
-  $("b-cancelar-u").onclick = cerrarForm;
-  $("fu").onsubmit = e => {
-    e.preventDefault(); const usuario = $("u-u").value.trim().toLowerCase(), rol = $("u-r").value;
-    intentar(async () => { await llamarAdmin({accion: "crear", usuario, nombre: $("u-n").value.trim(), password: $("u-p").value, rol}); log("Creó usuario", "perfiles", usuario + " (" + rol + ")"); }, "Usuario creado.");
-  };
-
-  document.querySelectorAll("[data-act]").forEach(x => x.onclick = () => intentar(async () => {
-    const u = por(x.dataset.act); await cambiarPerfil(u.id, {activo: !u.activo}); log(u.activo ? "Bloqueó usuario" : "Habilitó usuario", "perfiles", u.usuario);
-  }, "Acceso actualizado."));
-  document.querySelectorAll("[data-del]").forEach(x => x.onclick = () => {
-    const u = por(x.dataset.del); if (!confirm(`¿Eliminar definitivamente a ${u.nombre} (${u.usuario})?`)) return;
-    intentar(async () => { await llamarAdmin({accion: "eliminar", id: u.id}); log("Eliminó usuario", "perfiles", u.usuario); }, "Usuario eliminado.");
-  });
-
-  // Editar: tu propia fila abre "Mi cuenta"; las demás abren el editor de administrador
-  $("e-r").innerHTML = opciones;
-  $("e-x").onclick = () => $("dlg-editar").close();
-  document.querySelectorAll("[data-edit]").forEach(x => x.onclick = () => {
-    const u = por(x.dataset.edit);
-    if (u.id === perfil.id) return abrirCuenta();
-    uEdit = u; $("e-u").value = u.usuario || ""; $("e-n").value = u.nombre; $("e-r").value = u.rol; $("e-p").value = "";
-    $("dlg-editar").showModal();
-  });
-  $("fe").onsubmit = async e => {
-    e.preventDefault(); const u = uEdit, usuario = $("e-u").value.trim().toLowerCase(), nombre = $("e-n").value.trim(), rol = $("e-r").value, clave = $("e-p").value;
-    try {
-      await cambiarPerfil(u.id, {usuario, nombre, rol});
-      if (clave) await llamarAdmin({accion: "clave", id: u.id, password: clave});
-      log("Editó usuario", "perfiles", usuario + (clave ? " (nueva contraseña)" : ""));
-      $("dlg-editar").close(); toast("Usuario actualizado."); vistaUsuarios();
-    } catch (err) { toast(/duplicate|unique/i.test(err.message) ? "Ese nombre de usuario ya existe." : err.message, true); }
-  };
-}
-
-/* ---------- Administración: actividad ---------- */
-async function vistaActividad(){
-  const { data, error } = await sb.from("registro_actividad").select("*").order("creado_en", {ascending: false}).limit(200);
-  if (error) return $("app").innerHTML = `<div class="panel pad">No se pudo cargar: ${esc(error.message)}</div>`;
-  $("app").innerHTML = `<div class="panel pad"><div class="fila" style="justify-content:space-between;margin-bottom:10px"><h2>Registro de actividad</h2><button class="btn" id="b-rec">Actualizar</button></div>
-    <div class="tabla"><table><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Sección</th><th>Detalle</th></tr></thead><tbody>
-    ${data.map(r => `<tr><td>${new Date(r.creado_en).toLocaleString("es-EC")}</td><td>${esc(r.usuario_email)}</td><td>${esc(r.accion)}</td><td>${esc(r.entidad)}</td><td>${esc(r.detalle)}</td></tr>`).join("") || `<tr><td colspan="5">Sin actividad registrada.</td></tr>`}</tbody></table></div></div>`;
-  $("b-rec").onclick = vistaActividad;
-}
-
-/* ---------- Inicio ---------- */
-(async function init(){
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) await cargarPerfil(session.user);
-  render();
-})();
-</script>
-</body>
-</html>
+  state.propietarios = Array.from(propMap.values()).sort((a,b) => (a.nombre||"").localeCompare(b.nombre||""));
+  state.consultas = consultas;
+  state.vacunas = vacunas;
+  state.desparasitaciones = desparasitaciones;
+  state.cirugias = cirugias;
+  state.examenes = examenes;
+  state.medicacion = medicacion;
+  state.documentos = documentos;
+  state.citas = citas;
+  state.procedimientos = procedimientos;
+  state.procMascota = procMascota;
+  state.hospitalizaciones = hospitalizaciones;
+  state.kardex = kardex;
+  state.productos = productos;
+  state.movimientos = movimientos;
+  state.ventas = ventas;
+  state.notificaciones = notificaciones;
+  state.campanas = campanas;
+  state.perfiles = perfiles;
+  state.actividad = actividad.slice(0, 200);
+  if (cfgList && cfgList.length){
+    const localLogo = localStorage.getItem("vx_logo_url") || "";
+    const localFav = localStorage.getItem("vx_favicon_url") || "";
+    const localBg = localStorage.getItem("vx_custom_bg") || "";
+    state.config = {
+      ...state.config,
+      ...cfgList[0],
+      logo_url: cfgList[0].logo_url || localLogo,
+      favicon_url: cfgList[0].favicon_url || localFav,
+      custom_bg: cfgList[0].custom_bg || localBg
+    };
+    localStorage.setItem("vx_config_cache", JSON.stringify(
