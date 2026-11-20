@@ -899,16 +899,17 @@ table.saas-tbl tr:hover td{background:#f8fafc}
     <form id="fc-n" style="display:grid;gap:10px">
       <div><label for="c-user">Usuario</label><input id="c-user" disabled></div>
       <div><label for="c-nombre">Nombre visible</label><input id="c-nombre" required disabled></div>
-      <div class="fila"><button class="btn pri sm" id="c-gn" hidden>Guardar nombre</button></div>
     </form>
     <form id="fc-p" style="margin-top:16px;border-top:1px solid #e2e8f0;padding-top:14px;display:grid;gap:10px">
       <h4>Cambiar contraseña</h4>
       <div><label for="c-act">Contraseña actual</label><input id="c-act" type="password" autocomplete="current-password" disabled></div>
       <div><label for="c-new">Nueva contraseña (mín. 6)</label><input id="c-new" type="password" autocomplete="new-password" disabled></div>
-      <div class="fila"><button class="btn pri sm" id="c-gp" hidden>Actualizar contraseña</button></div>
     </form>
   </div>
-  <div class="dlg-foot"><button type="button" class="btn pri" id="c-ed">Editar perfil</button></div>
+  <div class="dlg-foot">
+    <button type="button" class="btn pri" id="c-ed">Editar perfil</button>
+    <button type="button" class="btn pri" id="c-save" hidden>Guardar</button>
+  </div>
 </dialog>
 
 <dialog id="dlg-saas">
@@ -1806,18 +1807,21 @@ $("fl").addEventListener("submit", async e => {
   render();
 });
 
-$("c-x").onclick = () => $("dlg-cuenta").close();
+$("c-x").onclick = () => {
+  if (editCuenta){
+    $("c-nombre").value = perfil.nombre;
+    $("c-act").value = $("c-new").value = "";
+    modoCuenta(false);
+  }
+  $("dlg-cuenta").close();
+};
 let editCuenta = false;
 function modoCuenta(ed){
   editCuenta = ed;
   ["c-nombre", "c-act", "c-new"].forEach(id => $(id).disabled = !ed);
-  $("c-ed").textContent = ed ? "Cancelar edición" : "Editar perfil";
-  revisarCambios();
-}
-function revisarCambios(){
-  const n = $("c-nombre").value.trim();
-  $("c-gn").hidden = !(editCuenta && n && n !== perfil.nombre);
-  $("c-gp").hidden = !(editCuenta && ($("c-act").value || $("c-new").value));
+  $("c-ed").textContent = ed ? "Cancelar" : "Editar perfil";
+  $("c-ed").className = ed ? "btn" : "btn pri";
+  $("c-save").hidden = !ed;
 }
 function refreshCuentaAvatar(){
   const url = getUserFoto(perfil);
@@ -1825,9 +1829,12 @@ function refreshCuentaAvatar(){
   $("c-foto-del").hidden = !url;
 }
 function abrirCuenta(){
-  $("c-user").value = perfil.usuario || ""; $("c-nombre").value = perfil.nombre; $("c-act").value = $("c-new").value = "";
+  $("c-user").value = perfil.usuario || "";
+  $("c-nombre").value = perfil.nombre;
+  $("c-act").value = $("c-new").value = "";
   refreshCuentaAvatar();
-  modoCuenta(false); $("dlg-cuenta").showModal();
+  modoCuenta(false);
+  $("dlg-cuenta").showModal();
   icons();
 }
 $("c-foto-up").onclick = () => $("c-foto-file").click();
@@ -1852,25 +1859,78 @@ $("c-foto-del").onclick = async () => {
   toast("Foto de perfil eliminada.");
   renderSaas();
 };
-["c-nombre", "c-act", "c-new"].forEach(id => $(id).addEventListener("input", revisarCambios));
-$("c-ed").onclick = () => { const entrar = !editCuenta; if (!entrar){ $("c-nombre").value = perfil.nombre; $("c-act").value = $("c-new").value = ""; } modoCuenta(entrar); };
-$("fc-n").addEventListener("submit", async e => {
-  e.preventDefault(); const n = $("c-nombre").value.trim(); if (!n || n === perfil.nombre) return;
-  const { error } = await sb.rpc("actualizar_mi_nombre", {p_nombre: n});
-  if (error) return toast("No se pudo guardar: " + error.message, true);
-  perfil.nombre = n; revisarCambios(); log("Cambió su nombre", "perfiles", n); toast("Nombre actualizado."); render();
-});
-$("fc-p").addEventListener("submit", async e => {
-  e.preventDefault();
-  if (!$("c-act").value) return toast("Escribe tu contraseña actual.", true);
-  if ($("c-new").value.length < 6) return toast("Mínimo 6 caracteres.", true);
-  const { data: { user } } = await sb.auth.getUser();
-  const chk = await sb.auth.signInWithPassword({email: user.email, password: $("c-act").value});
-  if (chk.error) return toast("La contraseña actual no es correcta.", true);
-  const { error } = await sb.auth.updateUser({password: $("c-new").value});
-  if (error) return toast("No se pudo cambiar: " + error.message, true);
-  $("c-act").value = $("c-new").value = ""; revisarCambios(); log("Cambió su contraseña", "perfiles"); toast("Contraseña actualizada.");
-});
+$("c-ed").onclick = () => {
+  const entrar = !editCuenta;
+  if (!entrar){
+    $("c-nombre").value = perfil.nombre;
+    $("c-act").value = $("c-new").value = "";
+  }
+  modoCuenta(entrar);
+};
+
+async function guardarCuenta(){
+  if (!editCuenta) return;
+  const n = $("c-nombre").value.trim();
+  const act = $("c-act").value;
+  const nw = $("c-new").value;
+
+  if (!n) return toast("El nombre visible no puede estar vacío.", true);
+
+  const cambioNombre = n !== perfil.nombre;
+  const cambioClave = Boolean(act || nw);
+
+  if (!cambioNombre && !cambioClave){
+    modoCuenta(false);
+    return toast("No se realizaron cambios.");
+  }
+
+  if (cambioClave){
+    if (!act) return toast("Escribe tu contraseña actual.", true);
+    if (nw.length < 6) return toast("La nueva contraseña debe tener mínimo 6 caracteres.", true);
+  }
+
+  $("c-save").disabled = true;
+  $("c-ed").disabled = true;
+
+  try {
+    if (cambioNombre){
+      const { error } = await sb.rpc("actualizar_mi_nombre", {p_nombre: n});
+      if (error){
+        toast("No se pudo guardar el nombre: " + error.message, true);
+        return;
+      }
+      perfil.nombre = n;
+      await log("Cambió su nombre", "perfiles", n);
+    }
+
+    if (cambioClave){
+      const { data: { user } } = await sb.auth.getUser();
+      const chk = await sb.auth.signInWithPassword({email: user.email, password: act});
+      if (chk.error){
+        toast("La contraseña actual no es correcta.", true);
+        return;
+      }
+      const { error } = await sb.auth.updateUser({password: nw});
+      if (error){
+        toast("No se pudo cambiar la contraseña: " + error.message, true);
+        return;
+      }
+      $("c-act").value = $("c-new").value = "";
+      await log("Cambió su contraseña", "perfiles");
+    }
+
+    modoCuenta(false);
+    toast("Cambios guardados correctamente.");
+    render();
+  } finally {
+    $("c-save").disabled = false;
+    $("c-ed").disabled = false;
+  }
+}
+
+$("c-save").onclick = guardarCuenta;
+$("fc-n").addEventListener("submit", e => { e.preventDefault(); guardarCuenta(); });
+$("fc-p").addEventListener("submit", e => { e.preventDefault(); guardarCuenta(); });
 async function cerrarSesion(){
   try { await log("Cerró sesión"); await sb.auth.signOut(); } catch {}
   try { await sb.auth.signOut({scope: "local"}); } catch {}
@@ -1976,7 +2036,7 @@ function pintarPortada(){
 
       <div>
         <button type="button" class="vx-btn-primary" id="vxOpenLoginBtn">
-          <span>Iniciar sesión</span>
+          <span>Iniciar sesión en Vexavet</span>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="5" y1="12" x2="19" y2="12"></line>
             <polyline points="12 5 19 12 12 19"></polyline>
@@ -3731,16 +3791,16 @@ function viewHospitalizacion(){
     <div class="card">
       <div class="card-head"><span class="card-title">Historial de Altas Médicas (${historial.length})</span></div>
       <div class="tbl-wrap"><table class="saas-tbl">
-        <thead><tr><th>Paciente</th><th>Jaula</th><th>Ingreso</th><th>Alta</th><th>Diagnóstico</th><th>Médico</th></tr></thead>
+        <thead><tr><th>Paciente</th><th>Ingreso</th><th>Egreso</th><th>Motivo</th><th>Diagnóstico Final</th><th>Médico</th></tr></thead>
         <tbody>
           ${historial.map(h => `<tr>
             <td><strong>${esc(h.mascota_nombre)}</strong></td>
-            <td>${esc(h.jaula || "—")}</td>
             <td>${fechaHora(h.fecha_ingreso)}</td>
-            <td>${fechaHora(h.fecha_alta)}</td>
-            <td>${esc(h.diagnostico || h.motivo)}</td>
+            <td>${fechaHora(h.fecha_egreso)}</td>
+            <td>${esc(h.motivo)}</td>
+            <td>${esc(h.diagnostico || "—")}</td>
             <td>${esc(h.medico_responsable || "—")}</td>
-          </tr>`).join("") || `<tr><td colspan="6">Sin registros de altas previas.</td></tr>`}
+          </tr>`).join("") || `<tr><td colspan="6">Sin egresos registrados.</td></tr>`}
         </tbody>
       </table></div>
     </div>
@@ -3752,33 +3812,33 @@ function openHospModal(){
     title: "Ingresar Paciente a Hospitalización",
     bodyHTML: `
       <form id="f-hosp" class="form-grid">
-        <div><label>Paciente *</label><select name="mascota_id" required>${state.mascotas.map(m => `<option value="${m.id}">${esc(m.nombre)} (${esc(m.duenio_nombre||"")})</option>`).join("")}</select></div>
-        <div><label>Jaula / Box / Área *</label><input name="jaula" required placeholder="Ej. Jaula A-01, UCI, Ambulatorio"></div>
+        <div><label>Paciente *</label><select name="mascota_id" required>${state.mascotas.map(m => `<option value="${m.id}">${esc(m.nombre)}</option>`).join("")}</select></div>
+        <div><label>Jaula / Box / Área *</label><input name="jaula" required placeholder="Ej. Jaula 03 - Felinos"></div>
+        <div class="full"><label>Motivo de Ingreso *</label><input name="motivo" required></div>
+        <div class="full"><label>Diagnóstico Presuntivo</label><input name="diagnostico"></div>
         <div><label>Estado Clínico</label><select name="estado"><option>Hospitalizado</option><option>Observación</option><option>Crítico</option></select></div>
         <div><label>Médico Responsable</label><input name="medico_responsable" value="${esc(perfil.nombre)}"></div>
-        <div class="full"><label>Motivo de Ingreso *</label><input name="motivo" required></div>
-        <div class="full"><label>Diagnóstico Presuntivo / Confirmado</label><input name="diagnostico"></div>
-        <div class="full"><label>Plan Terapéutico / Evolución Inicial</label><textarea name="evolucion"></textarea></div>
+        <div class="full"><label>Indicaciones de Manejo y Evolución</label><textarea name="evolucion"></textarea></div>
       </form>
     `,
-    footHTML: `<button type="button" class="btn" onclick="closeModal()">Cancelar</button><button type="submit" form="f-hosp" class="btn pri">Registrar Ingreso</button>`
+    footHTML: `<button type="button" class="btn" onclick="closeModal()">Cancelar</button><button type="submit" form="f-hosp" class="btn pri">Confirmar Ingreso</button>`
   });
   $("f-hosp").onsubmit = async e => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const pet = state.mascotas.find(m => m.id === fd.get("mascota_id"));
     await db.insert("hospitalizaciones", {
-      mascota_id: fd.get("mascota_id"),
-      mascota_nombre: pet?.nombre || "Paciente",
+      mascota_id: pet.id,
+      mascota_nombre: pet.nombre,
       jaula: fd.get("jaula").trim(),
-      estado: fd.get("estado"),
-      medico_responsable: fd.get("medico_responsable").trim(),
+      fecha_ingreso: new Date().toISOString(),
       motivo: fd.get("motivo").trim(),
       diagnostico: fd.get("diagnostico").trim() || null,
-      evolucion: fd.get("evolucion").trim() || null,
-      fecha_ingreso: new Date().toISOString()
+      estado: fd.get("estado"),
+      medico_responsable: fd.get("medico_responsable").trim(),
+      evolucion: fd.get("evolucion").trim() || null
     });
-    log("Ingresó a hospitalización", "hospitalizaciones", pet?.nombre);
+    log("Ingresó a hospitalización", "hospitalizaciones", pet.nombre);
     closeModal(); await syncAllData(); renderSaas(); toast("Paciente ingresado a hospitalización.");
   };
 }
@@ -3787,240 +3847,222 @@ function openKardexModal(hospId){
   const h = state.hospitalizaciones.find(x => x.id === hospId);
   const items = state.kardex.filter(k => k.hospitalizacion_id === hospId);
   openModal({
-    title: `Kardex y Evolución · ${h?.mascota_nombre}`,
+    title: `Kardex Hospitalario · ${h.mascota_nombre} (${h.jaula || ""})`,
     size: "wide",
     bodyHTML: `
-      <form id="f-kdx" class="form-grid" style="background:#f8fafc;padding:12px;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:16px">
-        <div><label>Medicamento / Fluido *</label><input name="medicamento" required placeholder="Ej. Ringer Lactato, Meloxicam…"></div>
-        <div><label>Dosis y Vía *</label><input name="dosis" required placeholder="Ej. 2 ml IV"></div>
-        <div><label>Horario Programado</label><input name="horario" placeholder="Ej. 08:00 / 20:00"></div>
-        <div><label>Observaciones</label><input name="observaciones"></div>
-        <div class="full" style="text-align:right"><button class="btn sm pri">+ Agregar al Kardex</button></div>
+      <form id="f-kardex" class="form-grid" style="background:#f8fafc;padding:12px;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:16px">
+        <div><label>Medicamento / Fluido *</label><input name="medicamento" required placeholder="Ej. Meloxicam 0.5%, Lactato Ringer"></div>
+        <div><label>Dosis *</label><input name="dosis" required placeholder="Ej. 0.4 ml / 20 ml/h"></div>
+        <div><label>Vía</label><input name="via" value="IV"></div>
+        <div><label>Horario Programado</label><input name="horario" placeholder="Ej. 08:00 - 20:00"></div>
+        <div class="full"><button class="btn pri sm">+ Agregar al Kardex</button></div>
       </form>
       <div class="tbl-wrap"><table class="saas-tbl">
-        <thead><tr><th>Medicamento</th><th>Dosis</th><th>Horario</th><th>Estado</th><th>Acción</th></tr></thead>
+        <thead><tr><th>Horario</th><th>Medicamento</th><th>Dosis / Vía</th><th>Estado</th><th>Acción</th></tr></thead>
         <tbody>
           ${items.map(k => `<tr>
-            <td><strong>${esc(k.medicamento)}</strong>${k.observaciones?`<div style="font-size:.76rem;color:#64748b">${esc(k.observaciones)}</div>`:""}</td>
-            <td>${esc(k.dosis)}</td>
-            <td>${esc(k.horario || "—")}</td>
-            <td>${k.administrado ? `<span class="badge b-ok">Aplicado (${esc(k.aplicado_por||"")})</span>` : `<span class="badge b-warn">Pendiente</span>`}</td>
-            <td>${!k.administrado ? `<button class="btn sm verde" onclick="applyKardex('${k.id}','${hospId}')">Marcar Aplicado</button>` : "✓"}</td>
+            <td><strong>${esc(k.horario || "—")}</strong></td>
+            <td>${esc(k.medicamento)}</td>
+            <td>${esc(k.dosis)} (${esc(k.via || "—")})</td>
+            <td>${k.administrado ? `<span class="badge b-ok">Administrado (${esc(k.administrado_por||"")})</span>` : `<span class="badge b-warn">Pendiente</span>`}</td>
+            <td>${!k.administrado ? `<button class="btn sm pri" onclick="checkKardex('${k.id}','${hospId}')">Marcar Aplicado</button>` : "✓"}</td>
           </tr>`).join("") || `<tr><td colspan="5">Sin indicaciones en el Kardex aún.</td></tr>`}
         </tbody>
       </table></div>
     `
   });
-  $("f-kdx").onsubmit = async e => {
+
+  $("f-kardex").onsubmit = async e => {
     e.preventDefault();
     const fd = new FormData(e.target);
     await db.insert("kardex_hospitalizacion", {
       hospitalizacion_id: hospId,
       medicamento: fd.get("medicamento").trim(),
       dosis: fd.get("dosis").trim(),
-      horario: fd.get("horario").trim() || null,
-      observaciones: fd.get("observaciones").trim() || null,
+      via: fd.get("via").trim(),
+      horario: fd.get("horario").trim(),
       administrado: false
     });
     await syncAllData(); openKardexModal(hospId); toast("Indicación agregada al Kardex.");
   };
 }
 
-async function applyKardex(kId, hospId){
+async function checkKardex(kId, hospId){
   await db.update("kardex_hospitalizacion", kId, {
     administrado: true,
-    aplicado_en: new Date().toISOString(),
-    aplicado_por: perfil.nombre
+    hora_administracion: new Date().toISOString(),
+    administrado_por: perfil.nombre
   });
-  await syncAllData(); openKardexModal(hospId); toast("Dosis marcada como administrada.");
+  await syncAllData(); openKardexModal(hospId); toast("Administración registrada.");
 }
 
 async function darAltaHosp(hospId){
   if (!confirm("¿Confirmar alta médica de este paciente?")) return;
-  await db.update("hospitalizaciones", hospId, {
-    estado: "Alta médica",
-    fecha_alta: new Date().toISOString()
-  });
-  log("Alta médica hospitalización", "hospitalizaciones", hospId);
-  await syncAllData(); renderSaas(); toast("Paciente dado de alta.");
+  await db.update("hospitalizaciones", hospId, { estado: "Alta médica", fecha_egreso: new Date().toISOString() });
+  log("Dio alta médica", "hospitalizaciones", hospId);
+  await syncAllData(); renderSaas(); toast("Alta médica registrada.");
 }
 
 /* ============ 8. PUNTO DE VENTA (POS) ============ */
-let posSearch = "";
+let posSearch = "", posCatFilter = "";
 function viewPOS(){
   const catalog = [
-    ...state.productos.map(p => ({ id: p.id, tipo: "producto", nombre: p.nombre, sub: `${p.categoria} · Stock: ${p.existencias}`, precio: Number(p.precio_venta || 0), stock: Number(p.existencias || 0) })),
-    ...state.procedimientos.map(s => ({ id: s.id, tipo: "servicio", nombre: s.nombre, sub: `Servicio · ${s.categoria}`, precio: Number(s.precio || 0), stock: 9999 }))
-  ].filter(it => it.nombre.toLowerCase().includes(posSearch.trim().toLowerCase()));
+    ...state.productos.map(p => ({ id: p.id, kind: "producto", name: p.nombre, cat: p.categoria || "Producto", price: Number(p.precio_venta || 0), stock: Number(p.existencias || 0) })),
+    ...state.procedimientos.map(s => ({ id: s.id, kind: "servicio", name: s.nombre, cat: s.categoria || "Servicio", price: Number(s.precio || 0), stock: null }))
+  ];
+  const q = posSearch.trim().toLowerCase();
+  const filtered = catalog.filter(item =>
+    (!posCatFilter || item.cat === posCatFilter) &&
+    item.name.toLowerCase().includes(q)
+  );
+  const cats = Array.from(new Set(catalog.map(c => c.cat)));
 
-  const taxRate = Number(state.config.impuesto_porcentaje || 0) / 100;
-  const subtotal = state.cart.reduce((s, c) => s + c.precio * c.cantidad, 0);
-  const descuento = Number($("pos-desc")?.value || 0);
-  const baseImp = Math.max(0, subtotal - descuento);
-  const impuesto = baseImp * taxRate;
-  const total = baseImp + impuesto;
+  const taxPct = Number(state.config.impuesto_porcentaje || 0);
+  const subtotal = state.cart.reduce((s, it) => s + (it.price * it.qty), 0);
+  const iva = subtotal * (taxPct / 100);
+  const total = subtotal + iva;
 
   $("workspace").innerHTML = `
     <div class="page-head">
-      <div><h1 class="page-title">Punto de Venta (POS)</h1><p class="page-sub">Ventas rápidas de farmacia, petshop y servicios veterinarios con descuento automático de stock</p></div>
-      <button class="btn" onclick="navTo('facturacion')"><i data-lucide="receipt"></i> Ver Comprobantes</button>
+      <div><h1 class="page-title">Punto de Venta (POS)</h1><p class="page-sub">Facturación rápida de productos veterinarios, medicamentos y servicios clínicos</p></div>
+      <button class="btn" onclick="navTo('facturacion')"><i data-lucide="receipt"></i> Ver Historial de Facturas</button>
     </div>
 
     <div class="pos-layout">
       <div class="card">
         <div class="card-head">
-          <input id="pos-q" type="search" value="${esc(posSearch)}" placeholder="Buscar producto, medicamento o servicio…" style="max-width:340px">
-          <span class="badge b-teal">${catalog.length} ítems disponibles</span>
+          <input id="pos-q" type="search" value="${esc(posSearch)}" placeholder="Buscar producto o servicio…" style="max-width:260px">
+          <select id="pos-cat" style="width:auto">
+            <option value="">Todas las categorías</option>
+            ${cats.map(c => `<option ${posCatFilter===c?"selected":""}>${esc(c)}</option>`).join("")}
+          </select>
         </div>
         <div class="card-body">
           <div class="prod-grid">
-            ${catalog.map((it, idx) => `
-              <button type="button" class="prod-tile" onclick="addToCart('${it.tipo}','${it.id}')">
+            ${filtered.map((item, i) => `
+              <button type="button" class="prod-tile" onclick="addToCart('${item.kind}','${item.id}')">
                 <div>
-                  <span class="badge ${it.tipo==="producto"?"b-info":"b-teal"}" style="margin-bottom:4px">${it.tipo === "producto" ? "Producto" : "Servicio"}</span>
-                  <div style="font-weight:700;font-size:.9rem">${esc(it.nombre)}</div>
-                  <div style="font-size:.75rem;color:#64748b">${esc(it.sub)}</div>
+                  <span class="badge ${item.kind==="servicio"?"b-info":"b-teal"}" style="margin-bottom:6px">${esc(item.cat)}</span>
+                  <div style="font-weight:700;font-size:.9rem">${esc(item.name)}</div>
                 </div>
-                <div style="font-weight:800;color:#0d9488;font-size:1rem">${money(it.precio)}</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+                  <strong style="color:#0d9488;font-size:1rem">${money(item.price)}</strong>
+                  ${item.stock !== null ? `<span style="font-size:.74rem;color:${item.stock<=5?"#dc2626":"#64748b"}">Stock: ${item.stock}</span>` : `<span style="font-size:.74rem;color:#64748b">Servicio</span>`}
+                </div>
               </button>
-            `).join("") || `<p style="color:#64748b">No hay productos o servicios cargados. Agrégalos desde Inventario o Procedimientos.</p>`}
+            `).join("") || `<div style="grid-column:1/-1;text-align:center;color:#64748b;padding:24px">No hay productos o servicios en el catálogo. Crea productos en <strong>Inventario</strong> o servicios en <strong>Procedimientos</strong>.</div>`}
           </div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-head">
-          <span class="card-title">Ticket de Venta Actual</span>
-          ${state.cart.length ? `<button class="btn sm pel" onclick="state.cart=[];viewPOS()">Vaciar</button>` : ""}
-        </div>
-        <div class="card-body" style="display:grid;gap:12px">
-          <div class="form-grid">
+        <div class="card-head"><span class="card-title">Ticket / Orden Actual</span><button class="btn sm pel" onclick="state.cart=[];viewPOS()">Vaciar</button></div>
+        <div class="card-body">
+          <div class="form-grid" style="margin-bottom:14px">
             <div>
               <label>Cliente / Propietario</label>
-              <input id="pos-client" value="Consumidor Final" list="dl-pos-clients">
-              <datalist id="dl-pos-clients"><option value="Consumidor Final">${state.propietarios.map(p => `<option value="${esc(p.nombre)}">`).join("")}</datalist>
+              <input id="pos-client" list="dl-pos-own" placeholder="Consumidor Final">
+              <datalist id="dl-pos-own">${state.propietarios.map(p => `<option value="${esc(p.nombre)}">`).join("")}</datalist>
             </div>
             <div>
-              <label>Mascota Asociada (Opcional)</label>
+              <label>Mascota (opcional)</label>
               <select id="pos-pet">
-                <option value="">Ninguna</option>
-                ${state.mascotas.map(m => `<option value="${esc(m.nombre)}">${esc(m.nombre)}</option>`).join("")}
+                <option value="">— Sin asociar —</option>
+                ${state.mascotas.map(m => `<option value="${m.id}">${esc(m.nombre)}</option>`).join("")}
               </select>
             </div>
           </div>
 
-          <div class="tbl-wrap" style="border:1px solid #e2e8f0;border-radius:8px">
-            <table class="saas-tbl">
-              <thead><tr><th>Ítem</th><th>Cant.</th><th>Subtotal</th><th></th></tr></thead>
-              <tbody>
-                ${state.cart.map((c, i) => `
-                  <tr>
-                    <td><strong>${esc(c.nombre)}</strong><div style="font-size:.75rem;color:#64748b">${money(c.precio)} c/u</div></td>
-                    <td><input type="number" min="1" value="${c.cantidad}" style="width:62px;min-height:30px;padding:4px 6px" onchange="updateCartQty(${i}, this.value)"></td>
-                    <td><strong>${money(c.precio * c.cantidad)}</strong></td>
-                    <td><button class="btn sm pel" onclick="state.cart.splice(${i},1);viewPOS()">✕</button></td>
-                  </tr>
-                `).join("") || `<tr><td colspan="4" style="text-align:center;color:#64748b;padding:20px">Selecciona productos o servicios a la izquierda.</td></tr>`}
-              </tbody>
-            </table>
+          <div style="border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;padding:10px 0;margin-bottom:12px;max-height:260px;overflow-y:auto">
+            ${state.cart.length ? state.cart.map((it, idx) => `
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed #f1f5f9">
+                <div style="min-width:0;flex:1">
+                  <div style="font-weight:600;font-size:.88rem">${esc(it.name)}</div>
+                  <div style="font-size:.76rem;color:#64748b">${money(it.price)} c/u</div>
+                </div>
+                <div class="fila">
+                  <button type="button" class="btn sm" onclick="updCartQty(${idx},-1)">-</button>
+                  <strong style="min-width:20px;text-align:center">${it.qty}</strong>
+                  <button type="button" class="btn sm" onclick="updCartQty(${idx},1)">+</button>
+                </div>
+                <strong style="min-width:65px;text-align:right">${money(it.price * it.qty)}</strong>
+              </div>
+            `).join("") : `<div style="text-align:center;color:#64748b;padding:24px;font-size:.88rem">Haz clic en un producto o servicio para agregarlo al carrito.</div>`}
           </div>
 
-          <div class="form-grid">
-            <div>
-              <label>Descuento (${state.config.moneda})</label>
-              <input type="number" id="pos-desc" min="0" step="0.01" value="${descuento}" oninput="recalcPosTotals()">
-            </div>
-            <div>
-              <label>Método de Pago</label>
-              <select id="pos-pay">
-                ${(state.config.metodos_pago || "Efectivo, Tarjeta, Transferencia").split(",").map(m => `<option>${esc(m.trim())}</option>`).join("")}
-              </select>
-            </div>
-          </div>
-
-          <div style="background:#f8fafc;padding:12px;border-radius:10px;border:1px solid #e2e8f0;display:grid;gap:4px;font-size:.9rem" id="pos-totals">
+          <div style="display:grid;gap:6px;font-size:.9rem;margin-bottom:14px">
             <div style="display:flex;justify-content:space-between"><span>Subtotal:</span><strong>${money(subtotal)}</strong></div>
-            <div style="display:flex;justify-content:space-between"><span>${esc(state.config.impuesto_nombre || "IVA")} (${state.config.impuesto_porcentaje || 0}%):</span><strong>${money(impuesto)}</strong></div>
-            <div style="display:flex;justify-content:space-between;font-size:1.15rem;color:#0d9488;border-top:1px solid #cbd5e1;padding-top:6px;margin-top:4px"><span>TOTAL A COBRAR:</span><strong>${money(total)}</strong></div>
+            <div style="display:flex;justify-content:space-between"><span>${esc(state.config.impuesto_nombre)} (${taxPct}%):</span><strong>${money(iva)}</strong></div>
+            <div style="display:flex;justify-content:space-between;font-size:1.2rem;color:#0d9488;border-top:1px solid #e2e8f0;padding-top:8px"><span>TOTAL:</span><strong>${money(total)}</strong></div>
           </div>
 
-          <button class="btn pri" style="min-height:44px;font-size:1rem" onclick="checkoutPOS()" ${!state.cart.length?"disabled":""}>
-            <i data-lucide="check-circle-2"></i> Registrar Venta y Emitir Comprobante
-          </button>
+          <div style="margin-bottom:12px">
+            <label>Método de Pago</label>
+            <select id="pos-pay">
+              ${(state.config.metodos_pago || "Efectivo, Tarjeta, Transferencia").split(",").map(m => `<option>${esc(m.trim())}</option>`).join("")}
+            </select>
+          </div>
+
+          <button type="button" class="btn pri" style="width:100%;min-height:44px;font-size:1rem" onclick="checkoutPOS()">Cobrar y Generar Factura</button>
         </div>
       </div>
     </div>
   `;
   $("pos-q").oninput = e => { posSearch = e.target.value; viewPOS(); };
-  icons();
+  $("pos-cat").onchange = e => { posCatFilter = e.target.value; viewPOS(); };
 }
 
-function addToCart(tipo, id){
-  const src = tipo === "producto"
+function addToCart(kind, id){
+  const source = kind === "producto"
     ? state.productos.find(p => String(p.id) === String(id))
     : state.procedimientos.find(s => String(s.id) === String(id));
-  if (!src) return;
-  const precio = Number(tipo === "producto" ? src.precio_venta : src.precio) || 0;
-  const existing = state.cart.find(c => c.tipo === tipo && String(c.id) === String(id));
-  if (existing) existing.cantidad++;
-  else state.cart.push({ id: src.id, tipo, nombre: src.nombre, precio, cantidad: 1 });
+  if (!source) return;
+  const existing = state.cart.find(c => c.kind === kind && String(c.id) === String(id));
+  if (existing) existing.qty += 1;
+  else state.cart.push({ kind, id, name: source.nombre, price: Number(kind === "producto" ? source.precio_venta : source.precio), qty: 1 });
   viewPOS();
 }
-
-function updateCartQty(idx, val){
-  const q = Math.max(1, Number(val) || 1);
-  state.cart[idx].cantidad = q;
+function updCartQty(idx, delta){
+  state.cart[idx].qty += delta;
+  if (state.cart[idx].qty <= 0) state.cart.splice(idx, 1);
   viewPOS();
-}
-
-function recalcPosTotals(){
-  const taxRate = Number(state.config.impuesto_porcentaje || 0) / 100;
-  const subtotal = state.cart.reduce((s, c) => s + c.precio * c.cantidad, 0);
-  const desc = Number($("pos-desc")?.value || 0);
-  const base = Math.max(0, subtotal - desc);
-  const imp = base * taxRate;
-  $("pos-totals").innerHTML = `
-    <div style="display:flex;justify-content:space-between"><span>Subtotal:</span><strong>${money(subtotal)}</strong></div>
-    <div style="display:flex;justify-content:space-between"><span>${esc(state.config.impuesto_nombre || "IVA")} (${state.config.impuesto_porcentaje || 0}%):</span><strong>${money(imp)}</strong></div>
-    <div style="display:flex;justify-content:space-between;font-size:1.15rem;color:#0d9488;border-top:1px solid #cbd5e1;padding-top:6px;margin-top:4px"><span>TOTAL A COBRAR:</span><strong>${money(base + imp)}</strong></div>
-  `;
 }
 
 async function checkoutPOS(){
-  if (!state.cart.length) return;
-  const taxRate = Number(state.config.impuesto_porcentaje || 0) / 100;
-  const subtotal = state.cart.reduce((s, c) => s + c.precio * c.cantidad, 0);
-  const descuento = Number($("pos-desc").value || 0);
-  const base = Math.max(0, subtotal - descuento);
-  const impuesto = Number((base * taxRate).toFixed(2));
-  const total = Number((base + impuesto).toFixed(2));
-  const numVenta = "FAC-" + Date.now().toString().slice(-6);
+  if (!state.cart.length) return toast("El carrito está vacío.", true);
+  const taxPct = Number(state.config.impuesto_porcentaje || 0);
+  const subtotal = state.cart.reduce((s, it) => s + (it.price * it.qty), 0);
+  const iva = subtotal * (taxPct / 100);
+  const total = subtotal + iva;
+  const numVenta = "FAC-" + String(Date.now()).slice(-6);
+  const petId = $("pos-pet").value || null;
+  const pet = state.mascotas.find(m => m.id === petId);
 
-  const venta = await db.insert("ventas", {
+  const sale = await db.insert("ventas", {
     numero_venta: numVenta,
-    cliente_nombre: $("pos-client").value.trim() || "Consumidor Final",
-    mascota_nombre: $("pos-pet").value || null,
+    cliente_nombre: $("pos-client").value.trim() || pet?.duenio_nombre || "Consumidor Final",
+    mascota_id: petId,
+    mascota_nombre: pet?.nombre || null,
     items: state.cart,
     subtotal,
-    descuento,
-    impuesto,
+    impuesto: iva,
     total,
     metodo_pago: $("pos-pay").value,
     estado_pago: "Pagada",
-    vendedor: perfil.nombre
+    cajero: perfil.nombre
   });
 
-  for (const item of state.cart){
-    if (item.tipo === "producto"){
-      const prod = state.productos.find(p => String(p.id) === String(item.id));
+  for (const it of state.cart){
+    if (it.kind === "producto"){
+      const prod = state.productos.find(p => String(p.id) === String(it.id));
       if (prod){
-        const nuevoStock = Math.max(0, Number(prod.existencias || 0) - item.cantidad);
+        const nuevoStock = Math.max(0, Number(prod.existencias || 0) - it.qty);
         await db.update("productos", prod.id, { existencias: nuevoStock });
         await db.insert("movimientos_inventario", {
           producto_id: prod.id,
           producto_nombre: prod.nombre,
-          tipo: "Salida por Venta",
-          cantidad: -item.cantidad,
+          tipo: "Salida (Venta)",
+          cantidad: it.qty,
           motivo: `Venta ${numVenta}`,
           usuario: perfil.nombre
         });
@@ -4028,74 +4070,68 @@ async function checkoutPOS(){
     }
   }
 
-  log("Registró venta POS", "ventas", `${numVenta} · ${money(total)}`);
   state.cart = [];
-  await syncAllData();
-  renderSaas();
-  toast(`Venta ${numVenta} registrada correctamente.`);
-  if (venta) previewFactura(venta);
+  log("Registró venta POS", "ventas", `${numVenta} (${money(total)})`);
+  await syncAllData(); renderSaas(); toast(`Venta ${numVenta} registrada correctamente.`);
+  if (sale) showFacturaModal(sale);
 }
 
 /* ============ 9. INVENTARIO ============ */
 let invSearch = "";
 function viewInventario(){
   const q = invSearch.trim().toLowerCase();
-  const list = state.productos.filter(p =>
-    (p.nombre + " " + (p.codigo||"") + " " + (p.categoria||"") + " " + (p.proveedor||"")).toLowerCase().includes(q)
-  );
-  const totalValor = state.productos.reduce((s, p) => s + Number(p.precio_compra || 0) * Number(p.existencias || 0), 0);
+  const list = state.productos.filter(p => (p.nombre + " " + (p.codigo||"") + " " + (p.categoria||"")).toLowerCase().includes(q));
 
   $("workspace").innerHTML = `
     <div class="page-head">
-      <div><h1 class="page-title">Inventario y Farmacia</h1><p class="page-sub">Control de medicamentos, insumos, lotes, vencimientos y valoración de stock (${money(totalValor)} al costo)</p></div>
-      <div class="fila">
-        <button class="btn" onclick="openStockMoveModal()"><i data-lucide="arrow-left-right"></i> Entrada / Ajuste Stock</button>
-        <button class="btn pri" onclick="openProductoModal()"><i data-lucide="plus"></i> Nuevo Producto</button>
-      </div>
+      <div><h1 class="page-title">Inventario y Farmacia</h1><p class="page-sub">Control de medicamentos, vacunas, alimentos, lotes y alertas de stock mínimo</p></div>
+      <button class="btn pri" onclick="openProductoModal()"><i data-lucide="package-plus"></i> Nuevo Producto</button>
     </div>
 
     <div class="card" style="margin-bottom:18px">
       <div class="card-head">
-        <input id="inv-q" type="search" value="${esc(invSearch)}" placeholder="Buscar por código, nombre, categoría o proveedor…" style="max-width:380px">
+        <input id="inv-q" type="search" value="${esc(invSearch)}" placeholder="Buscar por nombre, código, SKU o categoría…" style="max-width:360px">
         <span class="badge b-teal">${list.length} productos</span>
       </div>
       <div class="tbl-wrap"><table class="saas-tbl">
-        <thead><tr><th>Código / SKU</th><th>Producto</th><th>Categoría</th><th>Costo / Venta</th><th>Existencias</th><th>Vencimiento</th><th>Acciones</th></tr></thead>
+        <thead><tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Costo</th><th>P. Venta</th><th>Existencias</th><th>Vencimiento</th><th>Acciones</th></tr></thead>
         <tbody>
           ${list.map(p => {
             const low = Number(p.existencias) <= Number(p.stock_minimo || 5);
             return `<tr>
               <td style="font-size:.8rem;color:#64748b">${esc(p.codigo || p.sku || "—")}</td>
-              <td><strong>${esc(p.nombre)}</strong><div style="font-size:.76rem;color:#64748b">Prov: ${esc(p.proveedor || "—")} · Lote: ${esc(p.lote || "—")}</div></td>
+              <td><strong>${esc(p.nombre)}</strong>${p.lote?`<div style="font-size:.75rem;color:#64748b">Lote: ${esc(p.lote)}</div>`:""}</td>
               <td><span class="badge b-gray">${esc(p.categoria)}</span></td>
-              <td>${money(p.precio_compra)} / <strong>${money(p.precio_venta)}</strong></td>
-              <td><span class="badge ${low ? "b-err" : "b-ok"}">${p.existencias} unid.</span></td>
+              <td>${money(p.precio_compra)}</td>
+              <td><strong>${money(p.precio_venta)}</strong></td>
+              <td><span class="badge ${low ? "b-err" : "b-ok"}">${p.existencias} ${esc(p.unidad || "unid")}</span></td>
               <td>${fecha(p.fecha_vencimiento)}</td>
               <td>
                 <div class="fila">
+                  <button class="btn sm" onclick="openStockAdjustModal('${p.id}')">± Stock</button>
                   <button class="btn sm" onclick="openProductoModal('${p.id}')">Editar</button>
                   ${isAdmin() ? `<button class="btn sm pel" onclick="delProducto('${p.id}')">Quitar</button>` : ""}
                 </div>
               </td>
             </tr>`;
-          }).join("") || `<tr><td colspan="7" style="text-align:center;padding:24px;color:#64748b">No hay productos registrados en el inventario.</td></tr>`}
+          }).join("") || `<tr><td colspan="8" style="text-align:center;padding:24px;color:#64748b">Sin productos registrados en inventario.</td></tr>`}
         </tbody>
       </table></div>
     </div>
 
     <div class="card">
-      <div class="card-head"><span class="card-title">Kardex / Historial de Movimientos Recientes</span></div>
+      <div class="card-head"><span class="card-title">Kardex / Movimientos de Inventario (${state.movimientos.length})</span></div>
       <div class="tbl-wrap"><table class="saas-tbl">
         <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Motivo</th><th>Usuario</th></tr></thead>
         <tbody>
-          ${state.movimientos.slice(0,15).map(m => `<tr>
-            <td>${fechaHora(m.creado_en)}</td>
-            <td><strong>${esc(m.producto_nombre)}</strong></td>
-            <td><span class="badge ${Number(m.cantidad)>=0?"b-ok":"b-warn"}">${esc(m.tipo)}</span></td>
-            <td><strong>${Number(m.cantidad) > 0 ? "+" + m.cantidad : m.cantidad}</strong></td>
-            <td>${esc(m.motivo || "—")}</td>
-            <td>${esc(m.usuario || "—")}</td>
-          </tr>`).join("") || `<tr><td colspan="6">Sin movimientos de inventario aún.</td></tr>`}
+          ${state.movimientos.slice(0,25).map(mv => `<tr>
+            <td>${fechaHora(mv.creado_en)}</td>
+            <td><strong>${esc(mv.producto_nombre)}</strong></td>
+            <td><span class="badge ${mv.tipo.startsWith("Entrada")?"b-ok":"b-warn"}">${esc(mv.tipo)}</span></td>
+            <td>${mv.cantidad}</td>
+            <td>${esc(mv.motivo || "—")}</td>
+            <td>${esc(mv.usuario || "—")}</td>
+          </tr>`).join("") || `<tr><td colspan="6">Sin movimientos registrados.</td></tr>`}
         </tbody>
       </table></div>
     </div>
@@ -4111,17 +4147,16 @@ function openProductoModal(id = null){
     size: "wide",
     bodyHTML: `
       <form id="f-prod" class="form-grid">
-        <div><label>Código de Barras</label><input name="codigo" value="${esc(p?.codigo || "")}"></div>
-        <div><label>SKU Interno</label><input name="sku" value="${esc(p?.sku || "")}"></div>
-        <div class="full"><label>Nombre del Producto / Medicamento *</label><input name="nombre" value="${esc(p?.nombre || "")}" required></div>
-        <div><label>Categoría</label><select name="categoria">${["Medicamentos","Vacunas","Desparasitantes","Alimentos","Insumos Clínicos","Accesorios / Petshop","Higiene"].map(c => `<option ${p?.categoria===c?"selected":""}>${c}</option>`).join("")}</select></div>
-        <div><label>Proveedor</label><input name="proveedor" value="${esc(p?.proveedor || "")}"></div>
+        <div><label>Código / SKU</label><input name="codigo" value="${esc(p?.codigo || "")}"></div>
+        <div><label>Categoría *</label><select name="categoria">${["Medicamentos","Vacunas","Desparasitantes","Alimentos","Accesorios","Insumos Médicos"].map(c => `<option ${p?.categoria===c?"selected":""}>${c}</option>`).join("")}</select></div>
+        <div class="full"><label>Nombre del Producto *</label><input name="nombre" value="${esc(p?.nombre || "")}" required></div>
         <div><label>Precio Compra (${state.config.moneda})</label><input type="number" step="0.01" name="precio_compra" value="${p?.precio_compra ?? 0}"></div>
         <div><label>Precio Venta (${state.config.moneda}) *</label><input type="number" step="0.01" name="precio_venta" value="${p?.precio_venta ?? 0}" required></div>
         <div><label>Existencias Actuales *</label><input type="number" name="existencias" value="${p?.existencias ?? 0}" required></div>
-        <div><label>Stock Mínimo Alerta</label><input type="number" name="stock_minimo" value="${p?.stock_minimo ?? 5}"></div>
+        <div><label>Stock Mínimo (Alerta)</label><input type="number" name="stock_minimo" value="${p?.stock_minimo ?? 5}"></div>
         <div><label>Lote</label><input name="lote" value="${esc(p?.lote || "")}"></div>
         <div><label>Fecha de Vencimiento</label><input type="date" name="fecha_vencimiento" value="${p?.fecha_vencimiento || ""}"></div>
+        <div class="full"><label>Proveedor</label><input name="proveedor" value="${esc(p?.proveedor || "")}"></div>
       </form>
     `,
     footHTML: `<button type="button" class="btn" onclick="closeModal()">Cancelar</button><button type="submit" form="f-prod" class="btn pri">Guardar Producto</button>`
@@ -4131,16 +4166,15 @@ function openProductoModal(id = null){
     const fd = new FormData(e.target);
     const payload = {
       codigo: fd.get("codigo").trim() || null,
-      sku: fd.get("sku").trim() || null,
-      nombre: fd.get("nombre").trim(),
       categoria: fd.get("categoria"),
-      proveedor: fd.get("proveedor").trim() || null,
+      nombre: fd.get("nombre").trim(),
       precio_compra: Number(fd.get("precio_compra") || 0),
       precio_venta: Number(fd.get("precio_venta") || 0),
       existencias: Number(fd.get("existencias") || 0),
       stock_minimo: Number(fd.get("stock_minimo") || 5),
       lote: fd.get("lote").trim() || null,
-      fecha_vencimiento: fd.get("fecha_vencimiento") || null
+      fecha_vencimiento: fd.get("fecha_vencimiento") || null,
+      proveedor: fd.get("proveedor").trim() || null
     };
     if (isEdit) await db.update("productos", p.id, payload);
     else await db.insert("productos", payload);
@@ -4148,35 +4182,32 @@ function openProductoModal(id = null){
   };
 }
 
-function openStockMoveModal(){
+function openStockAdjustModal(id){
+  const p = state.productos.find(x => x.id === id);
   openModal({
-    title: "Registrar Entrada / Ajuste de Inventario",
+    title: `Ajustar Stock · ${p.nombre}`,
     bodyHTML: `
-      <form id="f-smov" class="form-grid">
-        <div class="full"><label>Producto *</label><select name="producto_id" required>${state.productos.map(p => `<option value="${p.id}">${esc(p.nombre)} (Actual: ${p.existencias})</option>`).join("")}</select></div>
-        <div><label>Tipo de Movimiento</label><select name="tipo"><option>Entrada / Compra</option><option>Ajuste Positivo</option><option>Salida / Merma</option></select></div>
-        <div><label>Cantidad *</label><input type="number" min="1" name="cantidad" value="1" required></div>
-        <div class="full"><label>Motivo / Factura Proveedor</label><input name="motivo" placeholder="Ej. Compra distribuidora #450"></div>
+      <form id="f-stk" class="form-grid">
+        <div><label>Tipo de Movimiento</label><select name="tipo"><option value="Entrada">Entrada (Compra / Reposición)</option><option value="Salida">Salida (Consumo interno / Merma)</option></select></div>
+        <div><label>Cantidad *</label><input type="number" min="1" name="cantidad" required value="1"></div>
+        <div class="full"><label>Motivo / Referencia</label><input name="motivo" placeholder="Ej. Factura proveedor #402"></div>
       </form>
     `,
-    footHTML: `<button type="button" class="btn" onclick="closeModal()">Cancelar</button><button type="submit" form="f-smov" class="btn pri">Aplicar Movimiento</button>`
+    footHTML: `<button type="button" class="btn" onclick="closeModal()">Cancelar</button><button type="submit" form="f-stk" class="btn pri">Aplicar Ajuste</button>`
   });
-  $("f-smov").onsubmit = async e => {
+  $("f-stk").onsubmit = async e => {
     e.preventDefault();
     const fd = new FormData(e.target);
-    const prod = state.productos.find(p => String(p.id) === String(fd.get("producto_id")));
-    if (!prod) return;
+    const tipo = fd.get("tipo");
     const qty = Number(fd.get("cantidad") || 0);
-    const isOut = fd.get("tipo").startsWith("Salida");
-    const delta = isOut ? -qty : qty;
-    const nuevo = Math.max(0, Number(prod.existencias || 0) + delta);
-    await db.update("productos", prod.id, { existencias: nuevo });
+    const nuevo = tipo === "Entrada" ? Number(p.existencias) + qty : Math.max(0, Number(p.existencias) - qty);
+    await db.update("productos", p.id, { existencias: nuevo });
     await db.insert("movimientos_inventario", {
-      producto_id: prod.id,
-      producto_nombre: prod.nombre,
-      tipo: fd.get("tipo"),
-      cantidad: delta,
-      motivo: fd.get("motivo").trim() || null,
+      producto_id: p.id,
+      producto_nombre: p.nombre,
+      tipo,
+      cantidad: qty,
+      motivo: fd.get("motivo").trim() || tipo,
       usuario: perfil.nombre
     });
     closeModal(); await syncAllData(); renderSaas(); toast("Stock actualizado.");
@@ -4184,40 +4215,48 @@ function openStockMoveModal(){
 }
 async function delProducto(id){ if (confirm("¿Eliminar este producto?")) { await db.remove("productos", id); await syncAllData(); renderSaas(); } }
 
-/* ============ 10. FACTURACIÓN Y COMPROBANTES ============ */
+/* ============ 10. FACTURACIÓN ============ */
 function viewFacturacion(){
+  const totalFacturado = state.ventas.filter(v => v.estado_pago !== "Anulada").reduce((s, v) => s + Number(v.total || 0), 0);
+
   $("workspace").innerHTML = `
     <div class="page-head">
-      <div><h1 class="page-title">Facturación y Comprobantes</h1><p class="page-sub">Historial de facturas emitidas, estados de pago y reimpresión</p></div>
-      <button class="btn pri" onclick="navTo('pos')"><i data-lucide="plus"></i> Nueva Venta / Factura</button>
+      <div><h1 class="page-title">Facturación y Comprobantes</h1><p class="page-sub">Historial de facturas, recibos, pagos y exportación contable</p></div>
+      <div class="fila">
+        <button class="btn" onclick="exportVentasCSV()"><i data-lucide="download"></i> Exportar CSV</button>
+        <button class="btn pri" onclick="navTo('pos')"><i data-lucide="plus"></i> Nueva Factura (POS)</button>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="tbl-wrap"><table class="saas-tbl">
-        <thead><tr><th>N° Comprobante</th><th>Fecha</th><th>Cliente</th><th>Mascota</th><th>Método</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
-        <tbody>
-          ${state.ventas.map(v => `<tr>
-            <td><strong>${esc(v.numero_venta)}</strong></td>
-            <td>${fechaHora(v.creado_en)}</td>
-            <td>${esc(v.cliente_nombre)}</td>
-            <td>${esc(v.mascota_nombre || "—")}</td>
-            <td>${esc(v.metodo_pago)}</td>
-            <td><strong>${money(v.total)}</strong></td>
-            <td><span class="badge ${v.estado_pago==="Anulada"?"b-err":"b-ok"}">${esc(v.estado_pago)}</span></td>
-            <td>
-              <div class="fila">
-                <button class="btn sm" onclick='previewFactura(${JSON.stringify(v).replace(/'/g,"&#39;")})'>Ver / Imprimir</button>
-                ${isAdmin() && v.estado_pago !== "Anulada" ? `<button class="btn sm pel" onclick="anularVenta('${v.id}')">Anular</button>` : ""}
-              </div>
-            </td>
-          </tr>`).join("") || `<tr><td colspan="8" style="text-align:center;padding:24px;color:#64748b">Aún no se han emitido comprobantes.</td></tr>`}
-        </tbody>
-      </table></div>
+    <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+      <div class="kpi-card"><div><div class="kpi-label">Total Facturado</div><div class="kpi-val">${money(totalFacturado)}</div></div><div class="kpi-ico" style="background:#dcfce7;color:#15803d"><i data-lucide="dollar-sign"></i></div></div>
+      <div class="kpi-card"><div><div class="kpi-label">Comprobantes Emitidos</div><div class="kpi-val">${state.ventas.length}</div></div><div class="kpi-ico" style="background:#dbeafe;color:#1d4ed8"><i data-lucide="receipt"></i></div></div>
     </div>
+
+    <div class="card"><div class="tbl-wrap"><table class="saas-tbl">
+      <thead><tr><th>N° Comprobante</th><th>Fecha</th><th>Cliente</th><th>Mascota</th><th>Método Pago</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody>
+        ${state.ventas.map(v => `<tr>
+          <td><strong>${esc(v.numero_venta)}</strong></td>
+          <td>${fechaHora(v.creado_en)}</td>
+          <td>${esc(v.cliente_nombre)}</td>
+          <td>${esc(v.mascota_nombre || "—")}</td>
+          <td>${esc(v.metodo_pago)}</td>
+          <td><strong>${money(v.total)}</strong></td>
+          <td><span class="badge ${v.estado_pago==="Anulada"?"b-err":"b-ok"}">${esc(v.estado_pago)}</span></td>
+          <td>
+            <div class="fila">
+              <button class="btn sm" onclick='showFacturaModal(${JSON.stringify(v).replace(/'/g,"&#39;")})'>Ver / Imprimir</button>
+              ${v.estado_pago!=="Anulada" && isAdmin() ? `<button class="btn sm pel" onclick="anularVenta('${v.id}')">Anular</button>` : ""}
+            </div>
+          </td>
+        </tr>`).join("") || `<tr><td colspan="8" style="text-align:center;padding:24px;color:#64748b">Aún no hay facturas emitidas.</td></tr>`}
+      </tbody>
+    </table></div></div>
   `;
 }
 
-function previewFactura(v){
+function showFacturaModal(v){
   const items = Array.isArray(v.items) ? v.items : [];
   const logo = getBrandLogoUrl();
   openModal({
@@ -4228,157 +4267,119 @@ function previewFactura(v){
         <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #0d9488;padding-bottom:10px;margin-bottom:14px">
           <div style="display:flex;align-items:center;gap:10px">
             ${logo ? `<img src="${esc(logo)}" alt="Logo" style="width:42px;height:42px;object-fit:contain">` : ""}
-            <div><h2 style="color:#0d9488">${esc(state.config.nombre_clinica)}</h2><div style="font-size:.82rem;color:#64748b">RUC/NIT: ${esc(state.config.nit_ruc)} · ${esc(state.config.direccion)}</div></div>
+            <div><h2 style="color:#0d9488">${esc(state.config.nombre_clinica)}</h2><div style="font-size:.8rem;color:#64748b">RUC/NIT: ${esc(state.config.nit_ruc)} · ${esc(state.config.direccion)}</div></div>
           </div>
-          <div style="text-align:right"><strong>${esc(v.numero_venta)}</strong><div style="font-size:.82rem">${fechaHora(v.creado_en)}</div></div>
+          <div style="text-align:right"><strong>${esc(v.numero_venta)}</strong><div style="font-size:.8rem">${fechaHora(v.creado_en)}</div></div>
         </div>
-        <p style="font-size:.88rem"><strong>Cliente:</strong> ${esc(v.cliente_nombre)} ${v.mascota_nombre ? `· <strong>Paciente:</strong> ${esc(v.mascota_nombre)}` : ""} · <strong>Pago:</strong> ${esc(v.metodo_pago)}</p>
+        <p style="font-size:.88rem"><strong>Cliente:</strong> ${esc(v.cliente_nombre)} &nbsp;|&nbsp; <strong>Paciente:</strong> ${esc(v.mascota_nombre || "—")} &nbsp;|&nbsp; <strong>Pago:</strong> ${esc(v.metodo_pago)}</p>
         <table class="saas-tbl" style="margin:12px 0">
-          <thead><tr><th>Descripción</th><th>Cant.</th><th>P. Unit</th><th>Total</th></tr></thead>
-          <tbody>${items.map(it => `<tr><td>${esc(it.nombre)}</td><td>${it.cantidad}</td><td>${money(it.precio)}</td><td>${money(it.precio * it.cantidad)}</td></tr>`).join("")}</tbody>
+          <thead><tr><th>Descripción</th><th>Cant.</th><th>P. Unit</th><th>Importe</th></tr></thead>
+          <tbody>${items.map(it => `<tr><td>${esc(it.name)}</td><td>${it.qty}</td><td>${money(it.price)}</td><td><strong>${money(it.price * it.qty)}</strong></td></tr>`).join("")}</tbody>
         </table>
-        <div style="text-align:right;font-size:.92rem;display:grid;gap:4px">
+        <div style="text-align:right;font-size:.92rem">
           <div>Subtotal: <strong>${money(v.subtotal)}</strong></div>
-          <div>Descuento: <strong>-${money(v.descuento)}</strong></div>
-          <div>Impuesto: <strong>${money(v.impuesto)}</strong></div>
-          <div style="font-size:1.15rem;color:#0d9488">TOTAL: <strong>${money(v.total)}</strong></div>
+          <div>${esc(state.config.impuesto_nombre)}: <strong>${money(v.impuesto)}</strong></div>
+          <div style="font-size:1.15rem;color:#0d9488;margin-top:4px">Total Pagado: <strong>${money(v.total)}</strong></div>
         </div>
       </div>
     `,
-    footHTML: `<button type="button" class="btn" onclick="closeModal()">Cerrar</button><button type="button" class="btn pri" onclick="window.print()">Imprimir / Guardar PDF</button>`
+    footHTML: `<button type="button" class="btn" onclick="closeModal()">Cerrar</button><button type="button" class="btn pri" onclick="window.print()">Imprimir / PDF</button>`
   });
 }
 
 async function anularVenta(id){
-  if (!confirm("¿Anular este comprobante?")) return;
+  if (!confirm("¿Anular esta factura?")) return;
   await db.update("ventas", id, { estado_pago: "Anulada" });
-  log("Anuló comprobante", "ventas", id);
-  await syncAllData(); renderSaas(); toast("Comprobante anulado.");
+  await syncAllData(); renderSaas(); toast("Factura anulada.");
 }
 
-/* ============ 11. NOTIFICACIONES Y RECORDATORIOS ============ */
+function exportVentasCSV(){
+  const rows = [["Numero","Fecha","Cliente","Mascota","Metodo","Subtotal","Impuesto","Total","Estado"]];
+  state.ventas.forEach(v => rows.push([v.numero_venta, v.creado_en, v.cliente_nombre, v.mascota_nombre||"", v.metodo_pago, v.subtotal, v.impuesto, v.total, v.estado_pago]));
+  const csv = rows.map(r => r.map(x => `"${String(x??"").replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+  a.download = `vexavet_ventas_${hoy()}.csv`;
+  a.click();
+}
+
+/* ============ 11. RECORDATORIOS Y NOTIFICACIONES ============ */
 function viewRecordatorios(){
   const alerts = computeAlerts();
   $("workspace").innerHTML = `
     <div class="page-head">
-      <div><h1 class="page-title">Notificaciones y Recordatorios</h1><p class="page-sub">Seguimiento automático de vacunas, desparasitaciones, citas y alertas operativas</p></div>
-      <button class="btn pri" onclick="openCustomReminderModal()"><i data-lucide="plus"></i> Nuevo Recordatorio</button>
+      <div><h1 class="page-title">Recordatorios y Alertas Automáticas</h1><p class="page-sub">Seguimiento preventivo de vacunas, desparasitaciones, citas e inventario</p></div>
     </div>
 
-    <div class="card" style="margin-bottom:18px">
-      <div class="card-head"><span class="card-title">Alertas Automáticas del Sistema (${alerts.length})</span></div>
-      <div class="tbl-wrap"><table class="saas-tbl">
-        <thead><tr><th>Categoría</th><th>Detalle</th><th>Propietario / Contacto</th><th>Estado</th><th>Acción</th></tr></thead>
-        <tbody>
-          ${alerts.map(a => {
-            const wa = a.phone ? `https://wa.me/${a.phone.replace(/\D/g,"")}?text=${encodeURIComponent(`Hola ${a.owner}, te recordamos desde ${state.config.nombre_clinica}: ${a.title} (${a.desc}).`)}` : "";
-            return `<tr>
-              <td><span class="badge b-${a.type==="err"?"err":a.type==="warn"?"warn":"info"}">${a.cat}</span></td>
-              <td><strong>${esc(a.title)}</strong><div style="font-size:.78rem;color:#64748b">${esc(a.desc)}</div></td>
-              <td>${esc(a.owner || "—")} ${a.phone ? `<div style="font-size:.78rem;color:#64748b">${esc(a.phone)}</div>` : ""}</td>
-              <td>${a.type === "err" ? "Vencido" : "Próximo"}</td>
-              <td>
-                <div class="fila">
-                  ${wa ? `<a class="btn sm verde" target="_blank" href="${wa}">WhatsApp</a>` : ""}
-                  ${a.petId ? `<button class="btn sm" onclick="navTo('historia','${a.petId}')">Ver Ficha</button>` : ""}
-                </div>
-              </td>
-            </tr>`;
-          }).join("") || `<tr><td colspan="5" style="text-align:center;padding:24px;color:#64748b">No hay alertas pendientes.</td></tr>`}
-        </tbody>
-      </table></div>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><span class="card-title">Recordatorios Personalizados (${state.notificaciones.length})</span></div>
-      <div class="tbl-wrap"><table class="saas-tbl">
-        <thead><tr><th>Fecha</th><th>Título</th><th>Mensaje</th><th>Estado</th><th></th></tr></thead>
-        <tbody>
-          ${state.notificaciones.map(n => `<tr>
-            <td>${fecha(n.fecha_programada)}</td>
-            <td><strong>${esc(n.titulo)}</strong></td>
-            <td>${esc(n.mensaje)}</td>
-            <td><span class="badge ${n.estado==="Enviado"?"b-ok":"b-warn"}">${esc(n.estado)}</span></td>
-            <td>${n.estado!=="Enviado" ? `<button class="btn sm pri" onclick="markReminderSent('${n.id}')">Marcar Enviado</button>` : "✓"}</td>
-          </tr>`).join("") || `<tr><td colspan="5">Sin recordatorios manuales creados.</td></tr>`}
-        </tbody>
-      </table></div>
-    </div>
+    <div class="card"><div class="tbl-wrap"><table class="saas-tbl">
+      <thead><tr><th>Categoría</th><th>Paciente / Ítem</th><th>Detalle</th><th>Propietario</th><th>Acción Rápida</th></tr></thead>
+      <tbody>
+        ${alerts.map(a => {
+          const tel = (a.phone || "").replace(/\D/g, "");
+          const msg = encodeURIComponent(`Hola ${a.owner || ""}, te saludamos de ${state.config.nombre_clinica}. Te recordamos sobre ${a.title}: ${a.desc}.`);
+          return `<tr>
+            <td><span class="badge b-${a.type==="err"?"err":a.type==="warn"?"warn":"info"}">${esc(a.cat)}</span></td>
+            <td><strong>${esc(a.title)}</strong></td>
+            <td>${esc(a.desc)}</td>
+            <td>${esc(a.owner || "—")} ${a.phone ? `<div style="font-size:.76rem;color:#64748b">${esc(a.phone)}</div>` : ""}</td>
+            <td>
+              <div class="fila">
+                ${tel ? `<a class="btn sm verde" target="_blank" href="https://wa.me/${tel}?text=${msg}">WhatsApp</a>` : ""}
+                ${a.petId ? `<button class="btn sm" onclick="navTo('historia','${a.petId}')">Ver Historia</button>` : ""}
+              </div>
+            </td>
+          </tr>`;
+        }).join("") || `<tr><td colspan="5" style="text-align:center;padding:28px;color:#64748b">No hay alertas ni recordatorios pendientes hoy.</td></tr>`}
+      </tbody>
+    </table></div></div>
   `;
 }
-
-function openCustomReminderModal(){
-  openModal({
-    title: "Crear Recordatorio Personalizado",
-    bodyHTML: `
-      <form id="f-rem" class="form-grid">
-        <div class="full"><label>Título *</label><input name="titulo" required placeholder="Ej. Control postoperatorio Max"></div>
-        <div><label>Fecha Programada *</label><input type="date" name="fecha_programada" value="${hoy()}" required></div>
-        <div><label>Canal</label><select name="canal"><option>WhatsApp</option><option>Llamada Telefónica</option><option>Correo Electrónico</option></select></div>
-        <div class="full"><label>Mensaje *</label><textarea name="mensaje" required></textarea></div>
-      </form>
-    `,
-    footHTML: `<button type="button" class="btn" onclick="closeModal()">Cancelar</button><button type="submit" form="f-rem" class="btn pri">Guardar</button>`
-  });
-  $("f-rem").onsubmit = async e => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    await db.insert("notificaciones", {
-      tipo: "Recordatorio",
-      titulo: fd.get("titulo").trim(),
-      fecha_programada: fd.get("fecha_programada"),
-      canal: fd.get("canal"),
-      mensaje: fd.get("mensaje").trim(),
-      estado: "Pendiente"
-    });
-    closeModal(); await syncAllData(); renderSaas(); toast("Recordatorio creado.");
-  };
-}
-async function markReminderSent(id){ await db.update("notificaciones", id, { estado: "Enviado" }); await syncAllData(); renderSaas(); toast("Marcado como enviado."); }
 
 /* ============ 12. MARKETING Y FIDELIZACIÓN ============ */
 function viewMarketing(){
+  const inactivePets = state.mascotas.filter(m => {
+    const last = state.consultas.find(c => c.mascota_id === m.id);
+    if (!last) return true;
+    return (Date.now() - new Date(last.fecha).getTime()) > 180 * 86400000;
+  });
+
   $("workspace").innerHTML = `
     <div class="page-head">
-      <div><h1 class="page-title">Marketing y Fidelización</h1><p class="page-sub">Campañas preventivas, segmentación por especie y comunicación directa con propietarios</p></div>
-      <button class="btn pri" onclick="openCampaignModal()"><i data-lucide="megaphone"></i> Nueva Campaña</button>
+      <div><h1 class="page-title">Marketing y Fidelización de Clientes</h1><p class="page-sub">Segmentación de pacientes, campañas promocionales y reactivación de clientes inactivos</p></div>
+      <button class="btn pri" onclick="openCampanaModal()"><i data-lucide="megaphone"></i> Nueva Campaña</button>
     </div>
 
     <div class="kpi-grid">
-      <div class="kpi-card"><div><div class="kpi-label">Base Total Propietarios</div><div class="kpi-val">${state.propietarios.length}</div></div><div class="kpi-ico" style="background:#dbeafe;color:#1d4ed8"><i data-lucide="users"></i></div></div>
-      <div class="kpi-card"><div><div class="kpi-label">Tutores de Perros</div><div class="kpi-val">${state.mascotas.filter(m=>m.especie==="Perro").length}</div></div><div class="kpi-ico" style="background:#ccfbf1;color:#0f766e"><i data-lucide="dog"></i></div></div>
-      <div class="kpi-card"><div><div class="kpi-label">Tutores de Gatos</div><div class="kpi-val">${state.mascotas.filter(m=>m.especie==="Gato").length}</div></div><div class="kpi-ico" style="background:#fef3c7;color:#b45309"><i data-lucide="cat"></i></div></div>
-      <div class="kpi-card"><div><div class="kpi-label">Campañas Creadas</div><div class="kpi-val">${state.campanas.length}</div></div><div class="kpi-ico" style="background:#ede9fe;color:#6d28d9"><i data-lucide="send"></i></div></div>
+      <div class="kpi-card"><div><div class="kpi-label">Base Total de Clientes</div><div class="kpi-val">${state.propietarios.length}</div></div><div class="kpi-ico" style="background:#ccfbf1;color:#0f766e"><i data-lucide="users"></i></div></div>
+      <div class="kpi-card"><div><div class="kpi-label">Pacientes sin Control (+6 meses)</div><div class="kpi-val">${inactivePets.length}</div><div class="kpi-foot">Oportunidad de reactivación</div></div><div class="kpi-ico" style="background:#fef3c7;color:#b45309"><i data-lucide="user-check"></i></div></div>
+      <div class="kpi-card"><div><div class="kpi-label">Campañas Creadas</div><div class="kpi-val">${state.campanas.length}</div></div><div class="kpi-ico" style="background:#dbeafe;color:#1d4ed8"><i data-lucide="send"></i></div></div>
     </div>
 
-    <div class="card">
-      <div class="card-head"><span class="card-title">Campañas de Fidelización</span></div>
-      <div class="tbl-wrap"><table class="saas-tbl">
-        <thead><tr><th>Campaña</th><th>Segmento</th><th>Canal</th><th>Mensaje</th><th>Estado</th><th>Acción</th></tr></thead>
-        <tbody>
-          ${state.campanas.map(c => `<tr>
-            <td><strong>${esc(c.nombre)}</strong></td>
-            <td><span class="badge b-info">${esc(c.segmento)}</span></td>
-            <td>${esc(c.canal)}</td>
-            <td style="max-width:320px">${esc(c.mensaje)}</td>
-            <td><span class="badge ${c.estado==="Enviada"?"b-ok":"b-gray"}">${esc(c.estado)}</span></td>
-            <td><button class="btn sm pri" onclick="launchCampaign('${c.id}')">Ejecutar Envío</button></td>
-          </tr>`).join("") || `<tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b">Crea tu primera campaña de vacunación, profilaxis o descuento preventivo.</td></tr>`}
-        </tbody>
-      </table></div>
-    </div>
+    <div class="card"><div class="tbl-wrap"><table class="saas-tbl">
+      <thead><tr><th>Campaña</th><th>Segmento</th><th>Canal</th><th>Destinatarios</th><th>Estado</th><th>Acción</th></tr></thead>
+      <tbody>
+        ${state.campanas.map(c => `<tr>
+          <td><strong>${esc(c.nombre)}</strong><div style="font-size:.77rem;color:#64748b">${esc((c.mensaje||"").slice(0,70))}…</div></td>
+          <td>${esc(c.segmento)}</td>
+          <td><span class="badge b-info">${esc(c.canal)}</span></td>
+          <td>${c.destinatarios_count}</td>
+          <td><span class="badge ${c.estado==="Enviada"?"b-ok":"b-warn"}">${esc(c.estado)}</span></td>
+          <td>${c.estado!=="Enviada" ? `<button class="btn sm pri" onclick="sendCampana('${c.id}')">Ejecutar Envío</button>` : "✓ Completada"}</td>
+        </tr>`).join("") || `<tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b">Crea tu primera campaña de vacunación o chequeo preventivo.</td></tr>`}
+      </tbody>
+    </table></div></div>
   `;
 }
 
-function openCampaignModal(){
+function openCampanaModal(){
   openModal({
-    title: "Crear Campaña de Marketing Veterinario",
+    title: "Crear Campaña de Marketing",
     bodyHTML: `
       <form id="f-camp" class="form-grid">
-        <div class="full"><label>Nombre de la Campaña *</label><input name="nombre" required placeholder="Ej. Jornada de Vacunación Antirrábica"></div>
-        <div><label>Segmento Objetivo</label><select name="segmento"><option>Todos los Propietarios</option><option>Propietarios de Perros</option><option>Propietarios de Gatos</option><option>Vacunas Próximas a Vencer</option></select></div>
-        <div><label>Canal</label><select name="canal"><option>WhatsApp</option><option>Correo Electrónico</option></select></div>
-        <div class="full"><label>Plantilla de Mensaje *</label><textarea name="mensaje" required>Hola {cliente}, en ${state.config.nombre_clinica} tenemos 15% de descuento este mes en chequeo preventivo y vacunación para {mascota}. ¡Agenda tu cita!</textarea></div>
+        <div class="full"><label>Nombre de la Campaña *</label><input name="nombre" required placeholder="Ej. Jornada de Vacunación Anual 2026"></div>
+        <div><label>Segmento Objetivo</label><select name="segmento"><option>Todos los propietarios</option><option>Dueños de Perros</option><option>Dueños de Gatos</option><option>Clientes inactivos (+6 meses)</option></select></div>
+        <div><label>Canal</label><select name="canal"><option>WhatsApp</option><option>Correo Electrónico</option><option>SMS</option></select></div>
+        <div class="full"><label>Mensaje *</label><textarea name="mensaje" required>Hola {cliente}, en ${state.config.nombre_clinica} tenemos 20% de descuento en chequeo preventivo y vacunas este mes. ¡Agenda tu cita!</textarea></div>
       </form>
     `,
     footHTML: `<button type="button" class="btn" onclick="closeModal()">Cancelar</button><button type="submit" form="f-camp" class="btn pri">Guardar Campaña</button>`
@@ -4391,326 +4392,295 @@ function openCampaignModal(){
       segmento: fd.get("segmento"),
       canal: fd.get("canal"),
       mensaje: fd.get("mensaje").trim(),
-      estado: "Borrador"
+      destinatarios_count: state.propietarios.length,
+      estado: "Programada"
     });
     closeModal(); await syncAllData(); renderSaas(); toast("Campaña creada.");
   };
 }
 
-async function launchCampaign(id){
-  await db.update("campanas_marketing", id, { estado: "Enviada" });
+async function sendCampana(id){
+  await db.update("campanas_marketing", id, { estado: "Enviada", fecha_envio: new Date().toISOString() });
   log("Ejecutó campaña marketing", "campanas_marketing", id);
-  await syncAllData(); renderSaas(); toast("Campaña marcada como enviada al segmento seleccionado.");
+  await syncAllData(); renderSaas(); toast("Campaña marcada como enviada.");
 }
 
 /* ============ 13. INFORMES Y ESTADÍSTICAS ============ */
+let repCharts = [];
 function viewInformes(){
-  const ventasValidas = state.ventas.filter(v => v.estado_pago !== "Anulada");
-  const ingresosTotales = ventasValidas.reduce((s, v) => s + Number(v.total || 0), 0);
-  const ticketProm = ventasValidas.length ? ingresosTotales / ventasValidas.length : 0;
+  repCharts.forEach(c => c.destroy());
+  repCharts = [];
+
+  const ingresosTot = state.ventas.filter(v => v.estado_pago !== "Anulada").reduce((s, v) => s + Number(v.total || 0), 0);
+  const ticketProm = state.ventas.length ? ingresosTot / state.ventas.length : 0;
 
   $("workspace").innerHTML = `
     <div class="page-head">
-      <div><h1 class="page-title">Informes y Estadísticas</h1><p class="page-sub">Reportes gerenciales, clínicos y financieros exportables en CSV</p></div>
-      <div class="fila">
-        <button class="btn" onclick="exportCSV('mascotas')"><i data-lucide="download"></i> Exportar Pacientes CSV</button>
-        <button class="btn" onclick="exportCSV('ventas')"><i data-lucide="download"></i> Exportar Ventas CSV</button>
-        <button class="btn pri" onclick="window.print()"><i data-lucide="printer"></i> Imprimir Reporte</button>
-      </div>
+      <div><h1 class="page-title">Informes y Analítica Gerencial</h1><p class="page-sub">Indicadores financieros, médicos y operativos de la clínica</p></div>
+      <button class="btn pri" onclick="window.print()"><i data-lucide="printer"></i> Imprimir / Exportar PDF</button>
     </div>
 
     <div class="kpi-grid">
-      <div class="kpi-card"><div><div class="kpi-label">Ingresos Acumulados</div><div class="kpi-val">${money(ingresosTotales)}</div></div><div class="kpi-ico" style="background:#dcfce7;color:#15803d"><i data-lucide="trending-up"></i></div></div>
-      <div class="kpi-card"><div><div class="kpi-label">Ticket Promedio</div><div class="kpi-val">${money(ticketProm)}</div></div><div class="kpi-ico" style="background:#dbeafe;color:#1d4ed8"><i data-lucide="receipt"></i></div></div>
-      <div class="kpi-card"><div><div class="kpi-label">Total Atenciones Clínicas</div><div class="kpi-val">${state.consultas.length + state.vacunas.length + state.cirugias.length}</div></div><div class="kpi-ico" style="background:#ccfbf1;color:#0f766e"><i data-lucide="activity"></i></div></div>
-      <div class="kpi-card"><div><div class="kpi-label">Tasa de Citas Completadas</div><div class="kpi-val">${state.citas.length ? Math.round((state.citas.filter(c=>c.estado==="Completada").length / state.citas.length)*100) : 0}%</div></div><div class="kpi-ico" style="background:#fef3c7;color:#b45309"><i data-lucide="check-circle"></i></div></div>
+      <div class="kpi-card"><div><div class="kpi-label">Ingresos Acumulados</div><div class="kpi-val">${money(ingresosTot)}</div></div><div class="kpi-ico" style="background:#dcfce7;color:#15803d"><i data-lucide="trending-up"></i></div></div>
+      <div class="kpi-card"><div><div class="kpi-label">Ticket Promedio</div><div class="kpi-val">${money(ticketProm)}</div></div><div class="kpi-ico" style="background:#dbeafe;color:#1d4ed8"><i data-lucide="credit-card"></i></div></div>
+      <div class="kpi-card"><div><div class="kpi-label">Total Consultas</div><div class="kpi-val">${state.consultas.length}</div></div><div class="kpi-ico" style="background:#ccfbf1;color:#0f766e"><i data-lucide="stethoscope"></i></div></div>
+      <div class="kpi-card"><div><div class="kpi-label">Total Vacunas Aplicadas</div><div class="kpi-val">${state.vacunas.length}</div></div><div class="kpi-ico" style="background:#fef3c7;color:#b45309"><i data-lucide="syringe"></i></div></div>
     </div>
 
     <div class="grid-2">
       <div class="card">
-        <div class="card-head"><span class="card-title">Resumen por Veterinario</span></div>
-        <div class="tbl-wrap"><table class="saas-tbl">
-          <thead><tr><th>Profesional</th><th>Consultas</th><th>Citas Asignadas</th></tr></thead>
-          <tbody>
-            ${state.perfiles.map(u => `<tr>
-              <td><strong>${esc(u.nombre)}</strong></td>
-              <td>${state.consultas.filter(c => c.veterinario === u.nombre).length}</td>
-              <td>${state.citas.filter(c => c.veterinario_nombre === u.nombre).length}</td>
-            </tr>`).join("")}
-          </tbody>
-        </table></div>
+        <div class="card-head"><span class="card-title">Ingresos por Método de Pago</span></div>
+        <div class="card-body" style="max-width:340px;margin:0 auto"><canvas id="rep-pay-chart" height="200"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">Servicios Más Solicitados en Agenda</span></div>
+        <div class="card-body"><canvas id="rep-srv-chart" height="200"></canvas></div>
+      </div>
+    </div>
+  `;
+
+  if (window.Chart){
+    const payMap = {};
+    state.ventas.filter(v => v.estado_pago !== "Anulada").forEach(v => {
+      const m = v.metodo_pago || "Efectivo";
+      payMap[m] = (payMap[m] || 0) + Number(v.total || 0);
+    });
+    repCharts.push(new Chart($("rep-pay-chart"), {
+      type: "pie",
+      data: {
+        labels: Object.keys(payMap).length ? Object.keys(payMap) : ["Sin ventas"],
+        datasets: [{ data: Object.keys(payMap).length ? Object.values(payMap) : [1], backgroundColor: ["#0d9488","#2563eb","#f59e0b","#8b5cf6"] }]
+      }
+    }));
+
+    const srvMap = {};
+    state.citas.forEach(c => { const s = c.tipo_servicio || "Consulta"; srvMap[s] = (srvMap[s] || 0) + 1; });
+    repCharts.push(new Chart($("rep-srv-chart"), {
+      type: "bar",
+      data: {
+        labels: Object.keys(srvMap).length ? Object.keys(srvMap) : ["Sin datos"],
+        datasets: [{ label: "Citas", data: Object.keys(srvMap).length ? Object.values(srvMap) : [0], backgroundColor: "#2563eb", borderRadius: 6 }]
+      },
+      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    }));
+  }
+}
+
+/* ============ 14. USUARIOS Y ROLES ============ */
+let euUserPhotoUrl = "";
+function refreshEditUserAvatar(){
+  const name = $("e-n").value.trim() || $("e-u").value.trim() || "U";
+  $("eu-ava-prev").innerHTML = avatarHTML(euUserPhotoUrl, name);
+  $("eu-foto-del").hidden = !euUserPhotoUrl;
+}
+$("eu-foto-file").onchange = async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  try {
+    euUserPhotoUrl = await uploadBrandingOrAvatar(f, "perfiles", 400, false);
+    refreshEditUserAvatar();
+    toast("Foto lista para guardar.");
+  } catch { toast("No se pudo procesar la imagen.", true); }
+  e.target.value = "";
+};
+$("eu-foto-del").onclick = () => {
+  euUserPhotoUrl = "";
+  refreshEditUserAvatar();
+};
+$("e-n").addEventListener("input", refreshEditUserAvatar);
+
+function viewUsuarios(){
+  if (!isAdmin()) return viewDashboard();
+  $("workspace").innerHTML = `
+    <div class="page-head">
+      <div><h1 class="page-title">Gestión de Usuarios y Roles</h1><p class="page-sub">Control de acceso del personal veterinario y administrativo</p></div>
+    </div>
+
+    <div class="grid-2" style="align-items:start">
+      <div class="card">
+        <div class="card-head"><span class="card-title">Crear Nuevo Usuario</span></div>
+        <div class="card-body">
+          <form id="f-new-user" style="display:grid;gap:12px">
+            <div><label>Usuario *</label><input name="usuario" required pattern="[a-zA-Z0-9._-]{3,30}" autocapitalize="none" placeholder="ej. dra.martinez"></div>
+            <div><label>Nombre Completo *</label><input name="nombre" required placeholder="Dra. Laura Martínez"></div>
+            <div><label>Rol *</label><select name="rol"><option value="veterinario">Veterinario</option><option value="administrador">Administrador</option></select></div>
+            <div><label>Contraseña Inicial (mín. 6) *</label><input type="password" name="password" minlength="6" required></div>
+            <button class="btn pri">Crear Usuario</button>
+          </form>
+        </div>
       </div>
 
       <div class="card">
-        <div class="card-head"><span class="card-title">Ingresos por Método de Pago</span></div>
+        <div class="card-head"><span class="card-title">Personal Registrado (${state.perfiles.length})</span></div>
         <div class="tbl-wrap"><table class="saas-tbl">
-          <thead><tr><th>Método de Pago</th><th>Comprobantes</th><th>Monto Total</th></tr></thead>
+          <thead><tr><th>Usuario / Nombre</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
           <tbody>
-            ${["Efectivo","Tarjeta","Transferencia"].map(mp => {
-              const sub = ventasValidas.filter(v => (v.metodo_pago||"").toLowerCase().includes(mp.toLowerCase()));
-              return `<tr><td><strong>${mp}</strong></td><td>${sub.length}</td><td><strong>${money(sub.reduce((s,v)=>s+Number(v.total||0),0))}</strong></td></tr>`;
+            ${state.perfiles.map(u => {
+              const yo = u.id === perfil.id;
+              return `<tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <div class="user-ava" style="width:36px;height:36px;font-size:.88rem">${userAvatarHTML(u)}</div>
+                    <div>
+                      <strong>${esc(u.nombre)}</strong>${yo?" (tú)":""}
+                      <div style="font-size:.78rem;color:#64748b">@${esc(u.usuario||u.email)}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style="text-transform:capitalize">${esc(u.rol)}</td>
+                <td><span class="badge ${u.activo?"b-ok":"b-err"}">${u.activo?"Activo":"Bloqueado"}</span></td>
+                <td>
+                  <div class="fila">
+                    <button class="btn sm" onclick="openEditUserModal('${u.id}')">Editar</button>
+                    ${!yo ? `<button class="btn sm ${u.activo?"rojo":"verde"}" onclick="toggleUserActive('${u.id}',${!u.activo})">${u.activo?"Bloquear":"Activar"}</button>` : ""}
+                    ${!yo ? `<button class="btn sm pel" onclick="deleteUser('${u.id}','${esc(u.nombre)}')">Eliminar</button>` : ""}
+                  </div>
+                </td>
+              </tr>`;
             }).join("")}
           </tbody>
         </table></div>
       </div>
     </div>
   `;
-}
 
-function exportCSV(type){
-  const rows = type === "ventas" ? state.ventas : state.mascotas;
-  if (!rows.length) return toast("No hay datos para exportar.", true);
-  const cols = Object.keys(rows[0]);
-  const csv = [cols.join(","), ...rows.map(r => cols.map(c => `"${String(r[c]??"").replace(/"/g,'""')}"`).join(","))].join("\n");
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob(["\uFEFF" + csv], {type: "text/csv;charset=utf-8;"}));
-  a.download = `vexavet_${type}_${hoy()}.csv`;
-  a.click();
-  toast("Archivo CSV descargado.");
-}
-
-/* ============ 14. USUARIOS Y ROLES (ADMIN) ============ */
-function viewUsuarios(){
-  if (!isAdmin()) return;
-  $("workspace").innerHTML = `
-    <div class="page-head">
-      <div><h1 class="page-title">Usuarios, Roles y Permisos</h1><p class="page-sub">Administración del equipo clínico y control de acceso al sistema</p></div>
-    </div>
-
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-head"><span class="card-title">Crear Nuevo Usuario</span></div>
-        <div class="card-body">
-          <form id="fu-new" style="display:grid;gap:12px">
-            <div style="display:flex;align-items:center;gap:14px;padding:10px;background:#f8fafc;border:1px solid var(--saas-border);border-radius:10px">
-              <div class="pet-ava" id="nu-ava-prev" style="width:52px;height:52px;font-size:1.15rem">U</div>
-              <div>
-                <input type="file" id="nu-foto-file" accept="image/jpeg,image/png,image/webp" hidden>
-                <button type="button" class="btn sm" onclick="$('nu-foto-file').click()"><i data-lucide="camera"></i> Foto de perfil (opcional)</button>
-                <div style="font-size:.75rem;color:var(--saas-muted);margin-top:3px">Se mostrará en el perfil y barra superior</div>
-              </div>
-            </div>
-            <div><label>Usuario *</label><input name="usuario" required pattern="[a-zA-Z0-9._-]{3,30}" autocapitalize="none" placeholder="ej. dra.martinez"></div>
-            <div><label>Nombre Completo *</label><input name="nombre" required placeholder="Dra. Sofía Martínez"></div>
-            <div><label>Contraseña Inicial *</label><input type="password" name="password" minlength="6" required></div>
-            <div><label>Rol en la Clínica</label><select name="rol"><option value="${ROL_VET}">Veterinario</option><option value="${ROL_ADMIN}">Administrador</option></select></div>
-            <button class="btn pri" id="bu-crear">Crear Usuario</button>
-          </form>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-head"><span class="card-title">Equipo Registrado (${state.perfiles.length})</span></div>
-        <div class="tbl-wrap"><table class="saas-tbl">
-          <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
-          <tbody>
-            ${state.perfiles.map(u => `<tr>
-              <td>
-                <div style="display:flex;align-items:center;gap:10px">
-                  <span class="user-ava" style="width:34px;height:34px">${userAvatarHTML(u)}</span>
-                  <strong>${esc(u.usuario || u.email)}</strong>
-                </div>
-              </td>
-              <td>${esc(u.nombre)}</td>
-              <td style="text-transform:capitalize">${esc(u.rol)}</td>
-              <td><span class="badge ${u.activo?"b-ok":"b-err"}">${u.activo?"Activo":"Bloqueado"}</span></td>
-              <td>
-                <div class="fila">
-                  <button class="btn sm" onclick="abrirEditarUsuario('${u.id}')">Editar</button>
-                  ${u.id !== perfil.id ? `<button class="btn sm ${u.activo?"pel":"verde"}" onclick="toggleUserActive('${u.id}',${!u.activo})">${u.activo?"Bloquear":"Activar"}</button>` : ""}
-                </div>
-              </td>
-            </tr>`).join("")}
-          </tbody>
-        </table></div>
-      </div>
-    </div>
-  `;
   ojos($("workspace"));
-  icons();
 
-  let newUserFotoFile = null;
-  $("nu-foto-file").onchange = e => {
-    const f = e.target.files[0];
-    if (!f) return;
-    newUserFotoFile = f;
-    $("nu-ava-prev").innerHTML = `<img src="${URL.createObjectURL(f)}" alt="Vista previa">`;
-  };
-
-  $("fu-new").onsubmit = async e => {
+  $("f-new-user").onsubmit = async e => {
     e.preventDefault();
-    const f = e.target;
-    const u = f.usuario.value.trim().toLowerCase();
-    const n = f.nombre.value.trim();
-    const p = f.password.value;
-    const r = f.rol.value;
-    $("bu-crear").disabled = true;
-    const cTemp = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {auth: {persistSession: false, autoRefreshToken: false}});
-    const { data, error } = await cTemp.auth.signUp({email: u + "@mascota.local", password: p, options: {data: {nombre: n, rol: r, usuario: u}}});
-    if (error){ $("bu-crear").disabled = false; return toast("No se pudo crear: " + error.message, true); }
-    const nuevo = data.user;
-    if (nuevo){
-      await new Promise(res => setTimeout(res, 400));
-      await sb.from("perfiles").update({activo: true, rol: r, nombre: n, usuario: u}).eq("id", nuevo.id);
-      if (newUserFotoFile){
-        try {
-          const url = await uploadBrandingOrAvatar(newUserFotoFile, "perfiles", 400, false);
-          await saveUserPhoto(nuevo.id, url);
-        } catch {}
-      }
-      log("Creó usuario", "perfiles", u);
-    }
-    f.reset();
-    newUserFotoFile = null;
-    $("bu-crear").disabled = false;
-    await syncAllData(); renderSaas(); toast("Usuario creado correctamente.");
+    const fd = new FormData(e.target);
+    const usuario = fd.get("usuario").trim();
+    const nombre = fd.get("nombre").trim();
+    const { data, error } = await sb.rpc("admin_crear_usuario", {
+      p_usuario: usuario,
+      p_password: fd.get("password"),
+      p_nombre: nombre,
+      p_rol: fd.get("rol")
+    });
+    if (error) return toast("Error: " + error.message, true);
+    log("Creó usuario", "perfiles", `${usuario} (${fd.get("rol")})`);
+    e.target.reset(); await syncAllData(); renderSaas(); toast(`Usuario ${usuario} creado correctamente.`);
   };
 }
 
-let editandoId = null;
-function refreshEditUserAvatar(u){
-  const url = getUserFoto(u);
-  $("eu-ava-prev").innerHTML = userAvatarHTML(u);
-  $("eu-foto-del").hidden = !url;
-}
-function abrirEditarUsuario(id){
+let editUserId = null;
+function openEditUserModal(id){
   const u = state.perfiles.find(x => x.id === id);
   if (!u) return;
-  editandoId = u.id;
+  editUserId = id;
+  euUserPhotoUrl = getUserFoto(u);
   $("e-u").value = u.usuario || "";
-  $("e-n").value = u.nombre;
+  $("e-n").value = u.nombre || "";
   $("e-p").value = "";
-  $("e-r").innerHTML = `<option value="${ROL_VET}">Veterinario</option><option value="${ROL_ADMIN}">Administrador</option>`;
+  $("e-r").innerHTML = `<option value="veterinario">Veterinario</option><option value="administrador">Administrador</option>`;
   $("e-r").value = u.rol;
-  $("e-r").disabled = u.id === perfil.id;
-  refreshEditUserAvatar(u);
+  $("e-r").disabled = id === perfil.id;
+  refreshEditUserAvatar();
+  ojos($("dlg-editar"));
   $("dlg-editar").showModal();
   icons();
 }
-$("eu-foto-file").onchange = async e => {
-  const f = e.target.files[0];
-  if (!f || !editandoId) return;
-  try {
-    const url = await uploadBrandingOrAvatar(f, "perfiles", 400, false);
-    await saveUserPhoto(editandoId, url);
-    const u = state.perfiles.find(x => x.id === editandoId);
-    if (u) refreshEditUserAvatar(u);
-    log("Actualizó foto de usuario", "perfiles", editandoId);
-    toast("Foto de perfil actualizada.");
-    renderSaas();
-  } catch { toast("No se pudo subir la foto.", true); }
-  e.target.value = "";
-};
-$("eu-foto-del").onclick = async () => {
-  if (!editandoId || !confirm("¿Eliminar la foto de perfil de este usuario?")) return;
-  await saveUserPhoto(editandoId, "");
-  const u = state.perfiles.find(x => x.id === editandoId);
-  if (u) refreshEditUserAvatar(u);
-  log("Eliminó foto de usuario", "perfiles", editandoId);
-  toast("Foto de perfil eliminada.");
-  renderSaas();
-};
 $("e-x").onclick = () => $("dlg-editar").close();
-$("fe").addEventListener("submit", async e => {
+$("fe").onsubmit = async e => {
   e.preventDefault();
-  const u = $("e-u").value.trim().toLowerCase(), n = $("e-n").value.trim(), r = $("e-r").value, p = $("e-p").value;
-  const { error } = await sb.rpc("admin_editar_usuario", {p_id: editandoId, p_usuario: u, p_nombre: n, p_rol: r, p_password: p || null});
-  if (error) return toast("No se pudo guardar: " + error.message, true);
-  log("Editó usuario", "perfiles", u);
+  const payload = { p_id: editUserId, p_usuario: $("e-u").value.trim(), p_nombre: $("e-n").value.trim(), p_rol: $("e-r").value };
+  if ($("e-p").value) payload.p_password = $("e-p").value;
+  const { error } = await sb.rpc("admin_editar_usuario", payload);
+  if (error) return toast(error.message, true);
+  await saveUserPhoto(editUserId, euUserPhotoUrl);
   $("dlg-editar").close();
-  if (editandoId === perfil.id){ perfil.usuario = u; perfil.nombre = n; }
+  log("Editó usuario", "perfiles", payload.p_usuario);
   await syncAllData(); renderSaas(); toast("Usuario actualizado.");
-});
+};
 async function toggleUserActive(id, activo){
-  await sb.from("perfiles").update({activo}).eq("id", id);
+  const { error } = await sb.from("perfiles").update({activo}).eq("id", id);
+  if (error) return toast(error.message, true);
   log(activo ? "Activó usuario" : "Bloqueó usuario", "perfiles", id);
-  await syncAllData(); renderSaas(); toast(activo ? "Usuario activado." : "Usuario bloqueado.");
+  await syncAllData(); renderSaas();
+}
+async function deleteUser(id, nombre){
+  if (!confirm(`¿Eliminar definitivamente a ${nombre}?`)) return;
+  const { error } = await sb.rpc("admin_eliminar_usuario", {p_id: id});
+  if (error) return toast(error.message, true);
+  setLocalUserAvatar(id, "");
+  log("Eliminó usuario", "perfiles", nombre);
+  await syncAllData(); renderSaas(); toast("Usuario eliminado.");
 }
 
-/* ============ 15. CONFIGURACIÓN GENERAL Y PERSONALIZACIÓN ============ */
+/* ============ 15. CONFIGURACIÓN DE LA CLÍNICA ============ */
 function viewConfiguracion(){
-  if (!isAdmin()) return;
+  if (!isAdmin()) return viewDashboard();
   const c = state.config;
-  const logo = getBrandLogoUrl();
-  const fav = getPageIconUrl();
+  const logoUrl = getBrandLogoUrl();
+  const favUrl = getPageIconUrl();
   const curBg = getCustomBg();
   const curLoginBg = getLoginBg();
 
   $("workspace").innerHTML = `
     <div class="page-head">
-      <div><h1 class="page-title">Configuración de la Clínica</h1><p class="page-sub">Identidad visual, logotipo, icono de página, fondos y parámetros fiscales</p></div>
+      <div><h1 class="page-title">Configuración de la Clínica</h1><p class="page-sub">Identidad visual, logo, icono de página, fondo, datos fiscales y parámetros operativos</p></div>
     </div>
 
     <div class="card" style="margin-bottom:18px">
-      <div class="card-head"><span class="card-title">Identidad Visual, Logotipo, Icono de Página y Fondos</span></div>
+      <div class="card-head"><span class="card-title">Identidad Visual, Logo, Icono de Pestaña y Fondos</span></div>
       <div class="card-body">
-        <div class="grid-2" style="margin-bottom:16px">
-          <div style="padding:14px;border:1px solid var(--saas-border);border-radius:12px;background:#f8fafc;display:flex;align-items:center;gap:14px">
-            <div style="width:64px;height:64px;border-radius:12px;background:#fff;border:1px solid var(--saas-border);display:grid;place-items:center;overflow:hidden;flex-shrink:0">
-              ${logo ? `<img src="${esc(logo)}" alt="Logo" style="width:100%;height:100%;object-fit:contain;padding:4px">` : `<i data-lucide="heart-pulse" style="width:28px;height:28px;color:#0d9488"></i>`}
+        <div class="grid-2">
+          <!-- Logo de VEXAVET -->
+          <div style="display:flex;align-items:center;gap:14px;padding:12px;border:1px solid var(--saas-border);border-radius:10px;background:#f8fafc">
+            <div style="width:58px;height:58px;border-radius:12px;background:#fff;border:1px solid #cbd5e1;display:grid;place-items:center;overflow:hidden;flex-shrink:0">
+              ${logoUrl ? `<img src="${esc(logoUrl)}" alt="Logo" style="width:100%;height:100%;object-fit:contain">` : `<span style="width:58px;height:58px;background:linear-gradient(135deg,#0d9488,#2563eb);display:grid;place-items:center">${vexavetSvgHTML(40)}</span>`}
             </div>
             <div style="display:grid;gap:6px">
-              <strong style="font-size:.92rem">Logotipo de la Clínica</strong>
-              <span style="font-size:.76rem;color:#64748b">Se muestra en el menú, recetas, comprobantes e inicio de sesión</span>
+              <strong style="font-size:.9rem">Logo Principal de la Clínica</strong>
+              <span style="font-size:.76rem;color:#64748b">Se muestra en la portada, login, menú lateral, barra superior y recetas/facturas.</span>
               <input type="file" id="cfg-logo-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
               <div class="fila">
-                <button type="button" class="btn sm pri" onclick="$('cfg-logo-file').click()"><i data-lucide="upload"></i> Subir Logo</button>
-                ${logo ? `<button type="button" class="btn sm pel" id="cfg-logo-del">Quitar</button>` : ""}
+                <button type="button" class="btn sm pri" onclick="$('cfg-logo-file').click()"><i data-lucide="upload"></i> Cambiar logo</button>
+                ${logoUrl ? `<button type="button" class="btn sm pel" id="cfg-logo-reset">Restaurar</button>` : ""}
               </div>
             </div>
           </div>
 
-          <div style="padding:14px;border:1px solid var(--saas-border);border-radius:12px;background:#f8fafc;display:flex;align-items:center;gap:14px">
-            <div style="width:64px;height:64px;border-radius:12px;background:#fff;border:1px solid var(--saas-border);display:grid;place-items:center;overflow:hidden;flex-shrink:0">
-              <img src="${esc(fav || DEFAULT_FAVICON)}" alt="Favicon" style="width:36px;height:36px;object-fit:contain">
+          <!-- Icono de la página (Favicon) -->
+          <div style="display:flex;align-items:center;gap:14px;padding:12px;border:1px solid var(--saas-border);border-radius:10px;background:#f8fafc">
+            <div style="width:58px;height:58px;border-radius:12px;background:#fff;border:1px solid #cbd5e1;display:grid;place-items:center;overflow:hidden;flex-shrink:0">
+              <img src="${esc(favUrl || DEFAULT_FAVICON)}" alt="Icono página" style="width:36px;height:36px;object-fit:contain">
             </div>
             <div style="display:grid;gap:6px">
-              <strong style="font-size:.92rem">Icono de Página (Favicon)</strong>
-              <span style="font-size:.76rem;color:#64748b">Icono que aparece en la pestaña del navegador</span>
-              <input type="file" id="cfg-fav-file" accept="image/png,image/x-icon,image/svg+xml,image/webp" hidden>
+              <strong style="font-size:.9rem">Icono de la Página (Pestaña del navegador)</strong>
+              <span style="font-size:.76rem;color:#64748b">Favicon cuadrado recomendado (PNG, ICO o SVG).</span>
+              <input type="file" id="cfg-fav-file" accept="image/png,image/jpeg,image/webp,image/x-icon,image/svg+xml" hidden>
               <div class="fila">
-                <button type="button" class="btn sm pri" onclick="$('cfg-fav-file').click()"><i data-lucide="sparkles"></i> Cambiar Icono</button>
-                ${fav ? `<button type="button" class="btn sm pel" id="cfg-fav-del">Restaurar</button>` : ""}
+                <button type="button" class="btn sm sec" onclick="$('cfg-fav-file').click()"><i data-lucide="sparkles"></i> Cambiar icono</button>
+                ${favUrl ? `<button type="button" class="btn sm pel" id="cfg-fav-reset">Restaurar</button>` : ""}
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="grid-2">
-          <!-- Fondo de la Pantalla de Inicio de Sesión / Portada -->
-          <div style="padding:14px;border:1px solid var(--saas-border);border-radius:12px;background:#f8fafc">
-            <strong style="font-size:.92rem;display:block;margin-bottom:4px">Fondo de Inicio de Sesión (Portada)</strong>
-            <span style="font-size:.76rem;color:#64748b;display:block;margin-bottom:10px">Imagen detrás de la tarjeta de bienvenida (se aplica desenfoque automático)</span>
-            <div style="width:100%;height:96px;border-radius:10px;border:1px solid var(--saas-border);overflow:hidden;margin-bottom:10px;display:grid;place-items:center;background:#e2e8f0">
-              ${curLoginBg
-                ? `<img src="${esc(curLoginBg)}" alt="Fondo portada" style="width:100%;height:100%;object-fit:cover;filter:blur(3px);transform:scale(1.05)">`
-                : `<span style="font-size:.8rem;color:#64748b">Imagen veterinaria predeterminada</span>`}
+          <!-- Fondo del Panel Interno -->
+          <div style="padding:12px;border:1px solid var(--saas-border);border-radius:10px;background:#f8fafc">
+            <strong style="font-size:.9rem">Fondo del Panel Clínico Interno</strong>
+            <div style="font-size:.76rem;color:#64748b;margin:2px 0 8px">Elige un color/degradado suave o sube una imagen de fondo para el área de trabajo.</div>
+            <div class="fila" style="margin-bottom:8px">
+              ${["#f3f6fa","#eef2ff","#f0fdf4","#fefce8","#f8fafc","linear-gradient(135deg,#e0f2fe 0%,#f0fdf4 100%)","linear-gradient(135deg,#f1f5f9 0%,#e2e8f0 100%)"].map(bg => `
+                <button type="button" class="bg-swatch" data-bg-preset="${esc(bg)}" style="background:${bg}" title="Aplicar fondo"></button>
+              `).join("")}
             </div>
-            <input type="file" id="cfg-login-bg-file" accept="image/jpeg,image/png,image/webp" hidden>
+            <input type="file" id="cfg-bg-file" accept="image/jpeg,image/png,image/webp" hidden>
             <div class="fila">
-              <button type="button" class="btn sm pri" onclick="$('cfg-login-bg-file').click()"><i data-lucide="image"></i> Subir imagen de portada</button>
-              ${curLoginBg ? `<button type="button" class="btn sm pel" id="cfg-login-bg-reset">Restaurar</button>` : ""}
+              <button type="button" class="btn sm" onclick="$('cfg-bg-file').click()"><i data-lucide="image"></i> Subir imagen de fondo</button>
+              ${curBg ? `<button type="button" class="btn sm pel" id="cfg-bg-reset">Fondo por defecto</button>` : ""}
             </div>
           </div>
 
-          <!-- Fondo del Panel de Trabajo (SaaS) -->
-          <div style="padding:14px;border:1px solid var(--saas-border);border-radius:12px;background:#f8fafc">
-            <strong style="font-size:.92rem;display:block;margin-bottom:4px">Fondo del Panel Clínico (Área Interna)</strong>
-            <span style="font-size:.76rem;color:#64748b;display:block;margin-bottom:10px">Elige un tema de color o sube una imagen de fondo para la plataforma</span>
-            <div class="fila" style="justify-content:space-between">
-              <div class="fila">
-                <button type="button" class="bg-swatch" style="background:#f3f6fa" title="Gris Clínico (Predeterminado)" onclick="setCustomBackground('')"></button>
-                <button type="button" class="bg-swatch" style="background:linear-gradient(135deg,#ecfdf5,#e0f2fe)" title="Menta y Cielo" onclick="setCustomBackground('linear-gradient(135deg,#ecfdf5 0%,#e0f2fe 100%)')"></button>
-                <button type="button" class="bg-swatch" style="background:linear-gradient(135deg,#f8fafc,#e2e8f0)" title="Pizarra Suave" onclick="setCustomBackground('linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%)')"></button>
-                <button type="button" class="bg-swatch" style="background:linear-gradient(135deg,#fefce8,#ecfdf5)" title="Crema Cálido" onclick="setCustomBackground('linear-gradient(135deg,#fefce8 0%,#ecfdf5 100%)')"></button>
-                <button type="button" class="bg-swatch" style="background:linear-gradient(135deg,#eef2ff,#f0fdfa)" title="Índigo Suave" onclick="setCustomBackground('linear-gradient(135deg,#eef2ff 0%,#f0fdfa 100%)')"></button>
-                <input type="color" id="cfg-bg-color" value="${curBg && curBg.startsWith('#') ? curBg : '#f3f6fa'}" title="Elegir color sólido" style="width:36px;height:28px;min-height:0;padding:2px;cursor:pointer">
-              </div>
-              <div class="fila">
-                <input type="file" id="cfg-bg-file" accept="image/jpeg,image/png,image/webp" hidden>
-                <button type="button" class="btn sm" onclick="$('cfg-bg-file').click()"><i data-lucide="image"></i> Imagen</button>
-                ${curBg ? `<button type="button" class="btn sm pel" id="cfg-bg-reset">Restaurar</button>` : ""}
-              </div>
+          <!-- Fondo de Pantalla de Bienvenida / Login -->
+          <div style="padding:12px;border:1px solid var(--saas-border);border-radius:10px;background:#f8fafc">
+            <strong style="font-size:.9rem">Fondo de Portada / Inicio de Sesión</strong>
+            <div style="font-size:.76rem;color:#64748b;margin:2px 0 8px">Personaliza la imagen difuminada de fondo de la pantalla de bienvenida.</div>
+            <input type="file" id="cfg-login-bg-file" accept="image/jpeg,image/png,image/webp" hidden>
+            <div class="fila" style="margin-top:14px">
+              <button type="button" class="btn sm" onclick="$('cfg-login-bg-file').click()"><i data-lucide="image"></i> Cambiar fondo de portada</button>
+              ${curLoginBg ? `<button type="button" class="btn sm pel" id="cfg-login-bg-reset">Restaurar imagen original</button>` : ""}
             </div>
           </div>
         </div>
@@ -4718,7 +4688,7 @@ function viewConfiguracion(){
     </div>
 
     <div class="card">
-      <div class="card-head"><span class="card-title">Datos Generales y Parámetros Fiscales</span></div>
+      <div class="card-head"><span class="card-title">Datos Generales y Fiscales</span></div>
       <div class="card-body">
         <form id="f-cfg" class="form-grid">
           <div><label>Nombre de la Clínica *</label><input name="nombre_clinica" value="${esc(c.nombre_clinica)}" required></div>
@@ -4726,116 +4696,75 @@ function viewConfiguracion(){
           <div><label>País</label><input name="pais" value="${esc(c.pais || "Ecuador")}"></div>
           <div><label>Ciudad</label><input name="ciudad" value="${esc(c.ciudad || "")}"></div>
           <div><label>Símbolo de Moneda</label><input name="moneda" value="${esc(c.moneda || "$")}"></div>
-          <div><label>Nombre del Impuesto</label><input name="impuesto_nombre" value="${esc(c.impuesto_nombre || "IVA")}"></div>
+          <div><label>Nombre del Impuesto (IVA / IGV)</label><input name="impuesto_nombre" value="${esc(c.impuesto_nombre || "IVA")}"></div>
           <div><label>Porcentaje de Impuesto (%)</label><input type="number" step="0.01" name="impuesto_porcentaje" value="${c.impuesto_porcentaje ?? 15}"></div>
-          <div><label>Teléfono de Contacto</label><input name="telefono" value="${esc(c.telefono || "")}"></div>
+          <div><label>Teléfono Principal</label><input name="telefono" value="${esc(c.telefono || "")}"></div>
           <div><label>Correo Corporativo</label><input type="email" name="email" value="${esc(c.email || "")}"></div>
           <div><label>Horario de Atención</label><input name="horario" value="${esc(c.horario || "")}"></div>
           <div class="full"><label>Dirección Física</label><input name="direccion" value="${esc(c.direccion || "")}"></div>
-          <div><label>Sedes / Sucursales</label><input name="sedes" value="${esc(c.sedes || "")}"></div>
-          <div><label>Métodos de Pago (separados por coma)</label><input name="metodos_pago" value="${esc(c.metodos_pago || "")}"></div>
-          <div class="full" style="text-align:right;margin-top:8px"><button class="btn pri">Guardar Configuración</button></div>
+          <div><label>Sucursales / Sedes</label><input name="sedes" value="${esc(c.sedes || "")}"></div>
+          <div><label>Métodos de Pago Aceptados (separados por coma)</label><input name="metodos_pago" value="${esc(c.metodos_pago || "")}"></div>
+          <div class="full"><button class="btn pri">Guardar Configuración</button></div>
         </form>
       </div>
     </div>
   `;
-  icons();
+
+  const saveAppearanceSetting = async (key, localKey, value, msg) => {
+    state.config[key] = value || "";
+    if (value) localStorage.setItem(localKey, value);
+    else localStorage.removeItem(localKey);
+    localStorage.setItem("vx_config_cache", JSON.stringify(state.config));
+    applyCustomAppearance();
+    try { await db.update("configuracion_clinica", 1, { [key]: value || null }); } catch {}
+    log("Actualizó apariencia", "configuracion_clinica", key);
+    toast(msg);
+    renderSaas();
+  };
 
   $("cfg-logo-file").onchange = async e => {
-    const f = e.target.files[0];
-    if (!f) return;
+    const f = e.target.files[0]; if (!f) return;
     try {
-      const url = await uploadBrandingOrAvatar(f, "branding", 500, true);
-      localStorage.setItem("vx_logo_url", url);
-      state.config.logo_url = url;
-      localStorage.setItem("vx_config_cache", JSON.stringify(state.config));
-      try { await db.update("configuracion_clinica", 1, { logo_url: url }); } catch {}
-      log("Actualizó logotipo de clínica", "configuracion_clinica");
-      toast("Logotipo actualizado.");
-      renderSaas();
-    } catch { toast("No se pudo subir el logotipo.", true); }
+      const url = await uploadBrandingOrAvatar(f, "branding", 400, true);
+      await saveAppearanceSetting("logo_url", "vx_logo_url", url, "Logo de la clínica actualizado.");
+    } catch { toast("No se pudo subir el logo.", true); }
   };
-  if ($("cfg-logo-del")){
-    $("cfg-logo-del").onclick = async () => {
-      localStorage.removeItem("vx_logo_url");
-      state.config.logo_url = "";
-      localStorage.setItem("vx_config_cache", JSON.stringify(state.config));
-      try { await db.update("configuracion_clinica", 1, { logo_url: null }); } catch {}
-      toast("Logotipo restaurado.");
-      renderSaas();
-    };
-  }
+  if ($("cfg-logo-reset")) $("cfg-logo-reset").onclick = () => saveAppearanceSetting("logo_url", "vx_logo_url", "", "Logo restaurado al original.");
 
   $("cfg-fav-file").onchange = async e => {
-    const f = e.target.files[0];
-    if (!f) return;
+    const f = e.target.files[0]; if (!f) return;
     try {
       const url = await uploadBrandingOrAvatar(f, "branding", 128, true);
-      localStorage.setItem("vx_favicon_url", url);
-      state.config.favicon_url = url;
-      localStorage.setItem("vx_config_cache", JSON.stringify(state.config));
-      applyCustomAppearance();
-      try { await db.update("configuracion_clinica", 1, { favicon_url: url }); } catch {}
-      log("Actualizó icono de página", "configuracion_clinica");
-      toast("Icono de pestaña actualizado.");
-      viewConfiguracion();
-    } catch { toast("No se pudo actualizar el icono.", true); }
+      await saveAppearanceSetting("favicon_url", "vx_favicon_url", url, "Icono de página actualizado.");
+    } catch { toast("No se pudo subir el icono.", true); }
   };
-  if ($("cfg-fav-del")){
-    $("cfg-fav-del").onclick = async () => {
-      localStorage.removeItem("vx_favicon_url");
-      state.config.favicon_url = "";
-      localStorage.setItem("vx_config_cache", JSON.stringify(state.config));
-      applyCustomAppearance();
-      try { await db.update("configuracion_clinica", 1, { favicon_url: null }); } catch {}
-      toast("Icono restaurado.");
-      viewConfiguracion();
-    };
-  }
+  if ($("cfg-fav-reset")) $("cfg-fav-reset").onclick = () => saveAppearanceSetting("favicon_url", "vx_favicon_url", "", "Icono de página restaurado.");
+
+  document.querySelectorAll("[data-bg-preset]").forEach(btn => {
+    btn.onclick = () => saveAppearanceSetting("custom_bg", "vx_custom_bg", btn.dataset.bgPreset, "Fondo actualizado.");
+  });
+  $("cfg-bg-file").onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const url = await uploadBrandingOrAvatar(f, "branding", 1600, false);
+      await saveAppearanceSetting("custom_bg", "vx_custom_bg", url, "Imagen de fondo aplicada.");
+    } catch { toast("No se pudo procesar la imagen de fondo.", true); }
+  };
+  if ($("cfg-bg-reset")) $("cfg-bg-reset").onclick = () => saveAppearanceSetting("custom_bg", "vx_custom_bg", "", "Fondo restaurado.");
 
   $("cfg-login-bg-file").onchange = async e => {
-    const f = e.target.files[0];
-    if (!f) return;
+    const f = e.target.files[0]; if (!f) return;
     try {
       const url = await uploadBrandingOrAvatar(f, "branding", 1600, false);
-      localStorage.setItem("vx_login_bg", url);
-      state.config.login_bg = url;
-      localStorage.setItem("vx_config_cache", JSON.stringify(state.config));
-      try { await db.update("configuracion_clinica", 1, { login_bg: url }); } catch {}
-      log("Actualizó fondo de portada", "configuracion_clinica");
-      toast("Fondo de inicio de sesión actualizado.");
-      viewConfiguracion();
-    } catch { toast("No se pudo cargar la imagen.", true); }
+      await saveAppearanceSetting("login_bg", "vx_login_bg", url, "Fondo de portada actualizado.");
+    } catch { toast("No se pudo procesar la imagen.", true); }
   };
-  if ($("cfg-login-bg-reset")){
-    $("cfg-login-bg-reset").onclick = async () => {
-      localStorage.removeItem("vx_login_bg");
-      state.config.login_bg = "";
-      localStorage.setItem("vx_config_cache", JSON.stringify(state.config));
-      try { await db.update("configuracion_clinica", 1, { login_bg: null }); } catch {}
-      toast("Fondo de portada restaurado.");
-      viewConfiguracion();
-    };
-  }
-
-  $("cfg-bg-color").onchange = e => setCustomBackground(e.target.value);
-  $("cfg-bg-file").onchange = async e => {
-    const f = e.target.files[0];
-    if (!f) return;
-    try {
-      const url = await uploadBrandingOrAvatar(f, "branding", 1600, false);
-      await setCustomBackground(url);
-    } catch { toast("No se pudo cargar la imagen de fondo.", true); }
-  };
-  if ($("cfg-bg-reset")){
-    $("cfg-bg-reset").onclick = () => setCustomBackground("");
-  }
+  if ($("cfg-login-bg-reset")) $("cfg-login-bg-reset").onclick = () => saveAppearanceSetting("login_bg", "vx_login_bg", "", "Fondo de portada restaurado.");
 
   $("f-cfg").onsubmit = async e => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const payload = {
-      id: 1,
       nombre_clinica: fd.get("nombre_clinica").trim(),
       nit_ruc: fd.get("nit_ruc").trim(),
       pais: fd.get("pais").trim(),
@@ -4848,64 +4777,46 @@ function viewConfiguracion(){
       horario: fd.get("horario").trim(),
       direccion: fd.get("direccion").trim(),
       sedes: fd.get("sedes").trim(),
-      metodos_pago: fd.get("metodos_pago").trim(),
-      logo_url: getBrandLogoUrl() || null,
-      favicon_url: getPageIconUrl() || null,
-      custom_bg: getCustomBg() || null,
-      login_bg: getLoginBg() || null
+      metodos_pago: fd.get("metodos_pago").trim()
     };
-    state.config = {...state.config, ...payload};
+    state.config = { ...state.config, ...payload };
     localStorage.setItem("vx_config_cache", JSON.stringify(state.config));
     try {
-      await db.update("configuracion_clinica", 1, payload);
+      const existing = await db.list("configuracion_clinica", "id", true);
+      if (existing && existing.length) await db.update("configuracion_clinica", existing[0].id, payload);
+      else await db.insert("configuracion_clinica", { id: 1, ...payload });
     } catch {}
-    log("Actualizó configuración", "configuracion_clinica");
-    renderSaas(); toast("Configuración guardada correctamente.");
+    log("Actualizó configuración", "configuracion_clinica", payload.nombre_clinica);
+    renderSaas(); toast("Configuración guardada.");
   };
+  icons();
 }
 
-async function setCustomBackground(val){
-  if (val){
-    localStorage.setItem("vx_custom_bg", val);
-  } else {
-    localStorage.removeItem("vx_custom_bg");
-  }
-  state.config.custom_bg = val;
-  localStorage.setItem("vx_config_cache", JSON.stringify(state.config));
-  applyCustomAppearance();
-  try { await db.update("configuracion_clinica", 1, { custom_bg: val || null }); } catch {}
-  log("Cambió fondo del panel", "configuracion_clinica");
-  toast(val ? "Fondo personalizado aplicado." : "Fondo predeterminado restaurado.");
-  viewConfiguracion();
-}
-
-/* ============ 16. AUDITORÍA (ADMIN) ============ */
+/* ============ 16. AUDITORÍA / REGISTRO DE ACTIVIDAD ============ */
 function viewAuditoria(){
-  if (!isAdmin()) return;
+  if (!isAdmin()) return viewDashboard();
   $("workspace").innerHTML = `
     <div class="page-head">
-      <div><h1 class="page-title">Registro de Actividad y Auditoría</h1><p class="page-sub">Trazabilidad completa de acciones realizadas por el personal</p></div>
+      <div><h1 class="page-title">Registro de Actividad y Auditoría</h1><p class="page-sub">Trazabilidad completa de acciones realizadas por el personal en el sistema</p></div>
     </div>
-    <div class="card">
-      <div class="tbl-wrap"><table class="saas-tbl">
-        <thead><tr><th>Fecha y Hora</th><th>Usuario</th><th>Acción</th><th>Módulo</th><th>Detalle</th></tr></thead>
-        <tbody>
-          ${state.actividad.map(a => `<tr>
-            <td>${fechaHora(a.creado_en)}</td>
-            <td><strong>${esc(a.usuario_email || "—")}</strong></td>
-            <td>${esc(a.accion)}</td>
-            <td><span class="badge b-gray">${esc(a.entidad || "sistema")}</span></td>
-            <td>${esc(a.detalle || "—")}</td>
-          </tr>`).join("")}
-        </tbody>
-      </table></div>
-    </div>
+    <div class="card"><div class="tbl-wrap"><table class="saas-tbl">
+      <thead><tr><th>Fecha y Hora</th><th>Usuario</th><th>Acción</th><th>Módulo / Entidad</th><th>Detalle</th></tr></thead>
+      <tbody>
+        ${state.actividad.map(a => `<tr>
+          <td>${fechaHora(a.creado_en)}</td>
+          <td><strong>${esc(a.usuario_email || "—")}</strong></td>
+          <td>${esc(a.accion)}</td>
+          <td><span class="badge b-gray">${esc(a.entidad || "—")}</span></td>
+          <td>${esc(a.detalle || "—")}</td>
+        </tr>`).join("") || `<tr><td colspan="5">Sin registros de auditoría aún.</td></tr>`}
+      </tbody>
+    </table></div></div>
   `;
 }
 
-/* ============ ARRANQUE ============ */
+/* ============ ARRANCAR APLICACIÓN ============ */
 function render(){
-  if (publicId && (forzarPublico || !perfil)) return pintarPublico();
+  if (publicId && (!perfil || forzarPublico)) return pintarPublico();
   if (!perfil) return pintarPortada();
   renderSaas();
 }
@@ -4913,12 +4824,17 @@ function render(){
 (async () => {
   await loadPublicBranding();
   const { data: { session } } = await sb.auth.getSession();
-  if (session?.user){
-    await cargarPerfil(session.user);
-    if (perfil) await syncAllData();
+  if (session){
+    const r = await cargarPerfil(session.user);
+    if (r) toast(r === "bloqueado" ? "Tu acceso está bloqueado." : "Cuenta sin perfil.", true);
+    else await syncAllData();
   }
   render();
   startNfcBridge();
+  sb.auth.onAuthStateChange((ev, s) => {
+    if (ev === "SIGNED_OUT" && perfil){ perfil = null; render(); }
+    if (ev === "SIGNED_IN" && s && !perfil) cargarPerfil(s.user).then(async () => { if (perfil) await syncAllData(); render(); });
+  });
 })();
 </script>
 </body>
