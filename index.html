@@ -3832,7 +3832,7 @@ function viewConfiguracion(){
     state.config[field] = value || "";
     localStorage.setItem("vx_config_cache", JSON.stringify(state.config));
     applyCustomAppearance();
-    try { await db.update("configuracion_clinica", 1, { [field]: value || null }); } catch {}
+    try { await sb.from("configuracion_clinica").upsert({ id: 1, [field]: value || null });} catch {}
   };
 
   // Logotipo
